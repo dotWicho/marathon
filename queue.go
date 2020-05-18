@@ -5,11 +5,11 @@ import (
 )
 
 type Queues struct {
-	Queue []Queue `json:"queue"`
+	Queue []QueueType `json:"queue"`
 }
 
-type Queue struct {
-	App                    AppQueue               `json:"app"`
+type QueueType struct {
+	App                    AppDefinition          `json:"app"`
 	Count                  int                    `json:"count"`
 	Delay                  Delay                  `json:"delay"`
 	Since                  interface{}            `json:"since"`
@@ -18,7 +18,7 @@ type Queue struct {
 }
 
 type AppQueue struct {
-	ID                    string                      `json:"id"`
+	ID                    string          `json:"id"`
 	Instances             int             `json:"instances"`
 	Cpus                  int             `json:"cpus"`
 	Mem                   int             `json:"mem"`
@@ -68,10 +68,10 @@ type Resource struct {
 }
 
 type Attribute struct {
-	Name   string  `json:"name"`
-	Scalar int     `json:"scalar"`
-	Ranges []Range `json:"ranges"`
-	Set []string   `json:"set"`
+	Name   string   `json:"name"`
+	Scalar int      `json:"scalar"`
+	Ranges []Range  `json:"ranges"`
+	Set    []string `json:"set"`
 }
 
 type Range struct {

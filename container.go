@@ -3,15 +3,16 @@ package marathon
 type Container struct {
 	Type         string        `json:"type"`
 	Docker       Docker        `json:"docker"`
-	Volumes      []Volume      `json:"volumes"`
-	PortMappings []PortMapping `json:"portMappings"`
+	Volumes      []Volume      `json:"volumes,omitempty"`
+	PortMappings []PortMapping `json:"portMappings,omitempty"`
 }
 
 type Docker struct {
-	ForcePullImage bool          `json:"forcePullImage"`
 	Image          string        `json:"image"`
-	Parameters     []interface{} `json:"parameters"`
+	Network        string        `json:"network,omitempty"`
 	Privileged     bool          `json:"privileged"`
+	Parameters     []interface{} `json:"parameters,omitempty"`
+	ForcePullImage bool          `json:"forcePullImage"`
 }
 
 type Volume struct {
@@ -21,23 +22,14 @@ type Volume struct {
 }
 
 type PortMapping struct {
-	ContainerPort int `json:"containerPort"`
-	HostPort      int `json:"hostPort"`
-	Labels        struct {
-		VIP0 string `json:"VIP_0"`
-	} `json:"labels"`
-	Protocol    string `json:"protocol"`
-	ServicePort int    `json:"servicePort"`
+	ContainerPort int           `json:"containerPort,omitempty"`
+	HostPort      int           `json:"hostPort,omitempty"`
+	Labels        []interface{} `json:"labels,omitempty"`
+	Protocol      string        `json:"protocol,omitempty"`
+	ServicePort   int           `json:"servicePort,omitempty"`
 }
 
 type Queue struct {
-	Type   string      `json:"type"`
-	Docker DockerQueue `json:"docker"`
-}
-
-type DockerQueue struct {
-	Image          string `json:"image"`
-	Network        string `json:"network"`
-	Privileged     bool   `json:"privileged"`
-	ForcePullImage bool   `json:"forcePullImage"`
+	Type   string `json:"type"`
+	Docker Docker `json:"docker"`
 }
