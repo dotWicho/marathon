@@ -30,7 +30,7 @@ type application interface {
 	Get(id string) (*Application, error)
 	Create(app AppDefinition) (*Application, error)
 	Destroy() error
-	Update(app AppDefinition) error
+	Update(app *AppDefinition) error
 
 	Scale(instances int, force bool) error
 	Stop(force bool) error
@@ -59,7 +59,10 @@ type application interface {
 	AddParameter(param interface{}) error
 	DelParameter(param interface{}) error
 
-	ApplyChanges() error
+	LoadFromFile(fileName string) error
+	DumpToFile(id, fileName string) error
+
+	applyChanges() error
 }
 
 // Marathon Application struct implements Methods of Marathon Application interface
@@ -219,7 +222,9 @@ func (ma *Application) Create(app AppDefinition) (*Application, error) {
 	if _, err := ma.client.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
 		return nil, err
 	}
-	ma.app.App = app
+	ma.app = &App{
+		App: app,
+	}
 	return ma, nil
 }
 
@@ -237,7 +242,7 @@ func (ma *Application) Destroy() error {
 	return errors.New("app cannot be null nor empty")
 }
 
-func (ma *Application) Update(app AppDefinition) error {
+func (ma *Application) Update(app *AppDefinition) error {
 
 	if _, err := ma.client.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
 		return err
@@ -248,18 +253,9 @@ func (ma *Application) Update(app AppDefinition) error {
 func (ma *Application) Scale(instances int, force bool) error {
 
 	if ma.app != nil {
-
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
-
-		if force {
-			ma.client.AddQueryParam("force", "true")
-		}
-
 		ma.app.App.Instances = instances
-		if _, err := ma.client.BodyAsJSON(ma.app.App).Patch(path, ma.deploy, ma.fail); err != nil {
-			return err
-		}
-		return nil
+
+		return ma.applyChanges()
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -323,7 +319,7 @@ func (ma *Application) Env() map[string]string {
 
 func (ma *Application) SetEnv(name, value string) error {
 
-	return ma.ApplyChanges()
+	return ma.applyChanges()
 }
 
 func (ma *Application) DelEnv(name string) error {
@@ -339,7 +335,7 @@ func (ma *Application) Cpus() float64 {
 func (ma *Application) SetCpus(to float64) error {
 
 	ma.app.App.Cpus = to
-	return ma.ApplyChanges()
+	return ma.applyChanges()
 }
 
 func (ma *Application) Memory() float64 {
@@ -350,7 +346,7 @@ func (ma *Application) Memory() float64 {
 func (ma *Application) SetMemory(to float64) error {
 
 	ma.app.App.Mem = to
-	return ma.ApplyChanges()
+	return ma.applyChanges()
 }
 
 func (ma *Application) Role() string {
@@ -361,7 +357,7 @@ func (ma *Application) Role() string {
 func (ma *Application) SetRole(to string) error {
 
 	ma.app.App.Role = to
-	return ma.ApplyChanges()
+	return ma.applyChanges()
 }
 
 func (ma *Application) Container() *Container {
@@ -382,20 +378,42 @@ func (ma *Application) SetContainer(to *Container) error {
 		Volumes:      to.Volumes,
 		PortMappings: to.PortMappings,
 	}
-	return ma.ApplyChanges()
+	return ma.applyChanges()
 }
 
 func (ma *Application) AddParameter(param interface{}) error {
 
-	return ma.ApplyChanges()
+	return ma.applyChanges()
 }
 
 func (ma *Application) DelParameter(param interface{}) error {
 
-	return ma.ApplyChanges()
+	return ma.applyChanges()
 }
 
-func (ma *Application) ApplyChanges() error {
+func (ma *Application) LoadFromFile(fileName string) error {
+	app := AppDefinition{}
+
+	if err := utils.LoadDataFromJson(app, fileName); err == nil {
+		_, err := ma.Create(app)
+		return err
+	}
+	return nil
+}
+
+func (ma *Application) DumpToFile(id, fileName string) error {
+
+	if _, err := ma.Get(id); err == nil {
+		if err := utils.WriteDataToJson(ma.app.App, fileName); err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
+	return nil
+}
+
+func (ma *Application) applyChanges() error {
 
 	if ma.app != nil {
 		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
