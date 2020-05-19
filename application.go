@@ -120,12 +120,12 @@ type AppDefinition struct {
 	Container             Container           `json:"container"`
 	Cpus                  float64             `json:"cpus"`
 	Disk                  float64             `json:"disk,omitempty"`
-	Env                   interface{}         `json:"env,omitempty"`
+	Env                   map[string]string   `json:"env,omitempty"`
 	Executor              string              `json:"executor,omitempty"`
 	Fetch                 []Fetch             `json:"fetch,omitempty"`
 	HealthChecks          []Healthcheck       `json:"healthChecks,omitempty"`
 	Instances             int                 `json:"instances"`
-	Labels                interface{}         `json:"labels,omitempty"`
+	Labels                map[string]string   `json:"labels,omitempty"`
 	MaxLaunchDelaySeconds int                 `json:"maxLaunchDelaySeconds,omitempty"`
 	Mem                   float64             `json:"mem"`
 	Gpus                  int                 `json:"gpus,omitempty"`
@@ -384,10 +384,10 @@ func (ma *Application) DelParameter(param interface{}) error {
 }
 
 func (ma *Application) LoadFromFile(fileName string) error {
-	app := AppDefinition{}
+	app := &AppDefinition{}
 
 	if err := utils.LoadDataFromJson(app, fileName); err == nil {
-		_, err := ma.Create(app)
+		_, err := ma.Create(*app)
 		return err
 	}
 	return nil
