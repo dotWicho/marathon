@@ -135,14 +135,6 @@ type AppDefinition struct {
 	KillSelection         string              `json:"killSelection,omitempty"`
 	UnreachableStrategy   UnreachableStrategy `json:"unreachableStrategy,omitempty"`
 	Role                  string              `json:"role,omitempty"`
-	// Version               time.Time                 `json:"version,omitempty"`
-	// VersionInfo           VersionInfo               `json:"versionInfo,omitempty"`
-	// TasksStaged           int                       `json:"tasksStaged,omitempty"`
-	// TasksRunning          int                       `json:"tasksRunning,omitempty"`
-	// TasksHealthy          int                       `json:"tasksHealthy,omitempty"`
-	// TasksUnhealthy        int                       `json:"tasksUnhealthy"`
-	// Deployments           []interface{}             `json:"deployments,omitempty"`
-	// Tasks                 tasks.Tasks               `json:"tasks"`
 }
 
 // Fetch reflects the data used by the sub-element fetch on a Marathon App
@@ -219,7 +211,7 @@ func (ma *Application) Get(id string) (*Application, error) {
 
 func (ma *Application) Create(app AppDefinition) (*Application, error) {
 
-	if _, err := ma.client.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
+	if _, err := ma.client.BodyAsJSON(app).Put(marathonApiApps, ma.deploy, ma.fail); err != nil {
 		return nil, err
 	}
 	ma.app = &App{
