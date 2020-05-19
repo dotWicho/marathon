@@ -8,25 +8,30 @@ type Container struct {
 }
 
 type Docker struct {
-	Image          string        `json:"image"`
-	Network        string        `json:"network,omitempty"`
-	Privileged     bool          `json:"privileged"`
-	Parameters     []interface{} `json:"parameters,omitempty"`
-	ForcePullImage bool          `json:"forcePullImage"`
+	Image          string             `json:"image"`
+	Network        string             `json:"network,omitempty"`
+	Privileged     bool               `json:"privileged"`
+	Parameters     []DockerParameters `json:"parameters,omitempty"`
+	ForcePullImage bool               `json:"forcePullImage"`
 }
 
 type Volume struct {
 	ContainerPath string `json:"containerPath"`
 	HostPath      string `json:"hostPath"`
-	Mode          string `json:"mode"`
+	Mode          string `json:"mode,omitempty"`
 }
 
 type PortMapping struct {
-	ContainerPort int           `json:"containerPort,omitempty"`
-	HostPort      int           `json:"hostPort,omitempty"`
-	Labels        []interface{} `json:"labels,omitempty"`
-	Protocol      string        `json:"protocol,omitempty"`
-	ServicePort   int           `json:"servicePort,omitempty"`
+	ContainerPort int               `json:"containerPort,omitempty"`
+	HostPort      int               `json:"hostPort,omitempty"`
+	Labels        map[string]string `json:"labels,omitempty"`
+	Protocol      string            `json:"protocol,omitempty"`
+	ServicePort   int               `json:"servicePort,omitempty"`
+}
+
+type DockerParameters struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type Queue struct {
