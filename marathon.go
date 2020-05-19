@@ -110,9 +110,7 @@ func (mc *Client) New(base *url.URL) *Client {
 	marathon.ma = NewMarathonApplication()
 	marathon.ma.client = marathon.client
 	marathon.ma.auth = marathon.auth
-	marathon.mas = NewMarathonApplications()
-	marathon.mas.client = marathon.client
-	marathon.mas.auth = marathon.auth
+
 	marathon.mg = nil
 	marathon.md = nil
 	marathon.mt = nil
