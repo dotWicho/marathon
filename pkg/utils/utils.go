@@ -18,7 +18,7 @@ func EndsWithSlash(path string) string {
 	return path + "/"
 }
 
-// just check if a path end with /
+// just delete initial /
 func DelInitialSlash(path string) string {
 	if path[0] == '/' {
 		return path[1:]
