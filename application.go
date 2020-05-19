@@ -80,35 +80,6 @@ type Application struct {
 	fail   *FailureMessage
 }
 
-//===
-
-// Marathon Applications interface
-type applications interface {
-	DestroyAll(force bool) error
-	ScaleAll(instances int) error
-	StopAll(force bool) error
-	StartAll() error
-	RestartAll(force bool) error
-	SuspendAll(force bool) error
-
-	AsMap() map[string]AppDefinition
-}
-
-// Marathon Applications struct implements Methods of Marathon Applications interface
-type Applications struct {
-	client *requist.Requist
-	//
-	apps *Apps
-
-	//
-	baseUrl string
-	auth    string
-
-	//
-	deploy *Response
-	fail   *FailureMessage
-}
-
 //=== Marathon JSON Entities definition
 
 // AppDefinition encapsulates the data definitions of a Marathon App
@@ -448,61 +419,4 @@ func (ma *Application) applyChanges() error {
 		return nil
 	}
 	return errors.New("app cannot be null nor empty")
-}
-
-//=== Marathon Applications methods
-
-// NewMarathonApplications returns a new instance of Marathon applications
-func NewMarathonApplications() *Applications {
-	mas := &Applications{
-		client:  nil,
-		apps:    &Apps{},
-		baseUrl: "",
-		auth:    "",
-		deploy:  &Response{},
-		fail:    &FailureMessage{},
-	}
-	return mas
-}
-
-// DestroyAll take a group of Marathon applications an destroys them
-func (ma *Applications) DestroyAll(force bool) error {
-
-	return nil
-}
-
-// ScaleAll take a group of Marathon applications an Scale them
-func (ma *Applications) ScaleAll(instances int) error {
-
-	return nil
-}
-
-// DestroyAll take a group of Marathon applications an stops them
-func (ma *Applications) StopAll(force bool) error {
-
-	return nil
-}
-
-// StartAll take a group of Marathon applications an starts them
-func (ma *Applications) StartAll() error {
-
-	return nil
-}
-
-// StartAll take a group of Marathon applications an restarts them
-func (ma *Applications) RestartAll(force bool) error {
-
-	return nil
-}
-
-// SuspendAll take a group of Marathon applications an suspends them
-func (ma *Applications) SuspendAll(force bool) error {
-
-	return nil
-}
-
-// AsMap returns a dictionary of Marathons applications index by app Id
-func (ma *Applications) AsMap() map[string]AppDefinition {
-
-	return nil
 }
