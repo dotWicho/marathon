@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-
 //===
 
 // App wraps an AppDefinition element returned by the Marathon API
@@ -61,7 +60,7 @@ type application interface {
 	DelParameter(param interface{}) error
 
 	LoadFromFile(fileName string) error
-	DumpToFile(id, fileName string) error
+	DumpToFile(fileName string) error
 
 	applyChanges() error
 }
@@ -402,13 +401,9 @@ func (ma *Application) LoadFromFile(fileName string) error {
 	return nil
 }
 
-func (ma *Application) DumpToFile(id, fileName string) error {
+func (ma *Application) DumpToFile(fileName string) error {
 
-	if _, err := ma.Get(id); err == nil {
-		if err := utils.WriteDataToJson(ma.app.App, fileName); err != nil {
-			return err
-		}
-	} else {
+	if err := utils.WriteDataToJson(ma.app.App, fileName); err != nil {
 		return err
 	}
 	return nil

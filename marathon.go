@@ -44,6 +44,9 @@ type client interface {
 
 	AppAddParameter(id string, param interface{}) error
 	AppDelParameter(id string, param interface{}) error
+
+	AppLoadFromFile(fileName string) error
+	AppDumpToFile(id, fileName string) error
 }
 
 type Client struct {
@@ -103,7 +106,7 @@ func (mc *Client) NewFromURL(base *url.URL) *Client {
 	marathon.mas = NewMarathonApplications()
 	marathon.mas.client = marathon.client
 	marathon.mas.auth = marathon.auth
-	marathon.mg	= nil
+	marathon.mg = nil
 	marathon.md = nil
 	marathon.mt = nil
 
@@ -309,4 +312,17 @@ func (mc *Client) AppDelParameter(id string, param interface{}) error {
 		return err
 	}
 	return mc.ma.DelParameter(param)
+}
+
+func (mc *Client) AppLoadFromFile(fileName string) error {
+
+	return mc.ma.LoadFromFile(fileName)
+}
+
+func (mc *Client) AppDumpToFile(id, fileName string) error {
+
+	if _, err := mc.ma.Get(id); err != nil {
+		return err
+	}
+	return mc.ma.DumpToFile(fileName)
 }
