@@ -30,7 +30,7 @@ type application interface {
 	Get(id string) (*Application, error)
 	Create(app AppDefinition) (*Application, error)
 	Destroy() error
-	Update(app *AppDefinition) error
+	Update(app AppDefinition) error
 
 	Scale(instances int, force bool) error
 	Stop(force bool) error
@@ -242,7 +242,7 @@ func (ma *Application) Destroy() error {
 	return errors.New("app cannot be null nor empty")
 }
 
-func (ma *Application) Update(app *AppDefinition) error {
+func (ma *Application) Update(app AppDefinition) error {
 
 	if _, err := ma.client.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
 		return err
