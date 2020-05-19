@@ -211,13 +211,18 @@ func (ma *Application) Get(id string) (*Application, error) {
 
 func (ma *Application) Create(app AppDefinition) (*Application, error) {
 
-	if _, err := ma.client.BodyAsJSON(app).Put(marathonApiApps, ma.deploy, ma.fail); err != nil {
-		return nil, err
+	if len(app.ID) > 0 {
+		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(app.ID))
+
+		if _, err := ma.client.BodyAsJSON(app).Put(path, ma.deploy, ma.fail); err != nil {
+			return nil, err
+		}
+		ma.app = &App{
+			App: app,
+		}
+		return ma, nil
 	}
-	ma.app = &App{
-		App: app,
-	}
-	return ma, nil
+	return nil, errors.New("incorrect application definition")
 }
 
 func (ma *Application) Destroy() error {
@@ -386,8 +391,9 @@ func (ma *Application) DelParameter(param interface{}) error {
 func (ma *Application) LoadFromFile(fileName string) error {
 	app := &AppDefinition{}
 
-	if err := utils.LoadDataFromJson(app, fileName); err == nil {
-		_, err := ma.Create(*app)
+	var err error
+	if err = utils.LoadDataFromJson(app, fileName); err == nil {
+		_, err = ma.Create(*app)
 		return err
 	}
 	return nil
