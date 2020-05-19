@@ -56,8 +56,8 @@ type application interface {
 	Container() *Container
 	SetContainer(to *Container) error
 
-	AddParameter(param interface{}) error
-	DelParameter(param interface{}) error
+	AddParameter(key, value string) error
+	DelParameter(key string) error
 
 	LoadFromFile(fileName string) error
 	DumpToFile(fileName string) error
@@ -402,13 +402,13 @@ func (ma *Application) SetContainer(to *Container) error {
 }
 
 // AddParameter sets the key, value into parameters of a Marathon application
-func (ma *Application) AddParameter(param interface{}) error {
+func (ma *Application) AddParameter(key, value string) error {
 
 	return ma.applyChanges()
 }
 
 // DelParameter erase the parameter referenced by key
-func (ma *Application) DelParameter(param interface{}) error {
+func (ma *Application) DelParameter(key string) error {
 
 	return ma.applyChanges()
 }
