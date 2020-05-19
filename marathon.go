@@ -100,6 +100,8 @@ func (mc *Client) New(base *url.URL) *Client {
 		marathon.auth = marathon.client.GetBasicAuth()
 	}
 	marathon.client.Accept("application/json")
+	marathon.client.SetHeader("Cache-Control", "no-cache")
+	marathon.client.SetHeader("Accept-Encoding", "identity")
 
 	marathon.ma = NewMarathonApplication()
 	marathon.ma.client = marathon.client
