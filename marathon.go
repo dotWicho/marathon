@@ -43,8 +43,8 @@ type client interface {
 	AppContainer(id string) *Container
 	AppSetContainer(id string, to *Container) error
 
-	AppAddParameter(id string, param interface{}) error
-	AppDelParameter(id string, param interface{}) error
+	AppAddParameter(id string, key, value string) error
+	AppDelParameter(id string, key string) error
 
 	AppLoadFromFile(fileName string) error
 	AppDumpToFile(id, fileName string) error
@@ -54,11 +54,10 @@ type client interface {
 type Client struct {
 	client *requist.Requist
 	//
-	ma  *Application
-	mas *Applications
-	mg  *Groups
-	md  *Deployment
-	mt  *Tasks
+	ma *Application
+	mg *Groups
+	md *Deployment
+	mt *Tasks
 
 	//
 	auth    string
@@ -330,21 +329,21 @@ func (mc *Client) AppSetContainer(id string, to *Container) error {
 }
 
 // Marathon AppAddParameter calls MarathonApplication.AddParameter
-func (mc *Client) AppAddParameter(id string, param interface{}) error {
+func (mc *Client) AppAddParameter(id string, key, value string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.AddParameter(param)
+	return mc.ma.AddParameter(key, value)
 }
 
 // Marathon AppDelParameter calls MarathonApplication.DelParameter
-func (mc *Client) AppDelParameter(id string, param interface{}) error {
+func (mc *Client) AppDelParameter(id string, key string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.DelParameter(param)
+	return mc.ma.DelParameter(key)
 }
 
 // Marathon AppLoadFromFile calls MarathonApplication.LoadFromFile
