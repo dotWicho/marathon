@@ -6,6 +6,7 @@ import (
 	"net/url"
 )
 
+// Marathon application interface
 type client interface {
 	New(base *url.URL) *Client
 	Connect(baseUrl string)
@@ -49,6 +50,7 @@ type client interface {
 	AppDumpToFile(id, fileName string) error
 }
 
+// Marathon application implementation
 type Client struct {
 	client *requist.Requist
 	//
@@ -87,6 +89,9 @@ func NewClientFromURL(base *url.URL) *Client {
 	return client.New(baseURL)
 }
 
+//=== Marathon utilities definitions ===
+
+// New returns a Client populated struct
 func (mc *Client) New(base *url.URL) *Client {
 
 	marathon := &Client{}
@@ -116,16 +121,19 @@ func (mc *Client) New(base *url.URL) *Client {
 	return marathon
 }
 
+// Connect sets baseUrl and prepares the Client with this
 func (mc *Client) Connect(baseUrl string) {
 	mc.client = nil
 	nc := mc.client.New(baseUrl)
 	mc.client = nc
 }
 
+// StatusCode returns last responseCode
 func (mc *Client) StatusCode() int {
 	return mc.client.StatusCode()
 }
 
+// CheckConnection send a request to check Marathon server connectivity
 func (mc *Client) CheckConnection() error {
 
 	if _, err := mc.client.Get(marathonApiPing, nil, nil); err != nil {
@@ -137,6 +145,7 @@ func (mc *Client) CheckConnection() error {
 	return nil
 }
 
+// SetBasicAuth used if we need to set login parameters
 func (mc *Client) SetBasicAuth(username, password string) {
 
 	mc.client.SetBasicAuth(username, password)
@@ -144,7 +153,7 @@ func (mc *Client) SetBasicAuth(username, password string) {
 
 //=== Marathon AppDefinition interface definitions ===
 
-// Marathon AppDefinition interface {}
+// Marathon AppCreate calls MarathonApplication.Create
 func (mc *Client) AppCreate(app AppDefinition) error {
 
 	_, err := mc.ma.Create(app)
@@ -152,6 +161,7 @@ func (mc *Client) AppCreate(app AppDefinition) error {
 	return err
 }
 
+// Marathon AppDestroy calls MarathonApplication.Destroy
 func (mc *Client) AppDestroy(id string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -160,11 +170,13 @@ func (mc *Client) AppDestroy(id string) error {
 	return mc.ma.Destroy()
 }
 
+// Marathon AppUpdate calls MarathonApplication.Update
 func (mc *Client) AppUpdate(app AppDefinition) error {
 
 	return mc.ma.Update(app)
 }
 
+// Marathon AppScale calls MarathonApplication.Scale
 func (mc *Client) AppScale(id string, instances int, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -173,6 +185,7 @@ func (mc *Client) AppScale(id string, instances int, force bool) error {
 	return mc.ma.Scale(instances, force)
 }
 
+// Marathon AppStop calls MarathonApplication.Stop
 func (mc *Client) AppStop(id string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -181,6 +194,7 @@ func (mc *Client) AppStop(id string, force bool) error {
 	return mc.ma.Stop(force)
 }
 
+// Marathon AppStart calls MarathonApplication.Start
 func (mc *Client) AppStart(id string, instances int, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -189,6 +203,7 @@ func (mc *Client) AppStart(id string, instances int, force bool) error {
 	return mc.ma.Start(instances, force)
 }
 
+// Marathon AppRestart calls MarathonApplication.Restart
 func (mc *Client) AppRestart(id string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -197,6 +212,7 @@ func (mc *Client) AppRestart(id string, force bool) error {
 	return mc.ma.Restart(force)
 }
 
+// Marathon AppSuspend calls MarathonApplication.Suspend
 func (mc *Client) AppSuspend(id string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -205,6 +221,7 @@ func (mc *Client) AppSuspend(id string, force bool) error {
 	return mc.ma.Suspend(force)
 }
 
+// Marathon AppRetag calls MarathonApplication.Retag
 func (mc *Client) AppRetag(id string, tag string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -213,6 +230,7 @@ func (mc *Client) AppRetag(id string, tag string) error {
 	return mc.ma.Retag(tag)
 }
 
+// Marathon AppEnv calls MarathonApplication.Env
 func (mc *Client) AppEnv(id string) map[string]string {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -221,6 +239,7 @@ func (mc *Client) AppEnv(id string) map[string]string {
 	return mc.ma.Env()
 }
 
+// Marathon AppSetEnv calls MarathonApplication.SetEnv
 func (mc *Client) AppSetEnv(id, name, value string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -229,6 +248,7 @@ func (mc *Client) AppSetEnv(id, name, value string) error {
 	return mc.ma.SetEnv(name, value)
 }
 
+// Marathon AppDelEnv calls MarathonApplication.DelEnv
 func (mc *Client) AppDelEnv(id, name string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -237,6 +257,7 @@ func (mc *Client) AppDelEnv(id, name string) error {
 	return mc.ma.DelEnv(name)
 }
 
+// Marathon AppCpus calls MarathonApplication.Cpus
 func (mc *Client) AppCpus(id string) float64 {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -245,6 +266,7 @@ func (mc *Client) AppCpus(id string) float64 {
 	return mc.ma.Cpus()
 }
 
+// Marathon AppSetCpus calls MarathonApplication.SetCpus
 func (mc *Client) AppSetCpus(id string, to float64) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -253,6 +275,7 @@ func (mc *Client) AppSetCpus(id string, to float64) error {
 	return mc.ma.SetCpus(to)
 }
 
+// Marathon AppMemory calls MarathonApplication.Memory
 func (mc *Client) AppMemory(id string) float64 {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -261,6 +284,7 @@ func (mc *Client) AppMemory(id string) float64 {
 	return mc.ma.Memory()
 }
 
+// Marathon AppSetMemory calls MarathonApplication.SetMemory
 func (mc *Client) AppSetMemory(id string, to float64) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -269,6 +293,7 @@ func (mc *Client) AppSetMemory(id string, to float64) error {
 	return mc.ma.SetCpus(to)
 }
 
+// Marathon AppRole calls MarathonApplication.Role
 func (mc *Client) AppRole(id string) string {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -277,6 +302,7 @@ func (mc *Client) AppRole(id string) string {
 	return mc.ma.Role()
 }
 
+// Marathon AppSetRole calls MarathonApplication.SetRole
 func (mc *Client) AppSetRole(id, to string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -285,6 +311,7 @@ func (mc *Client) AppSetRole(id, to string) error {
 	return mc.ma.SetRole(to)
 }
 
+// Marathon AppContainer calls MarathonApplication.Container
 func (mc *Client) AppContainer(id string) *Container {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -293,6 +320,7 @@ func (mc *Client) AppContainer(id string) *Container {
 	return mc.ma.Container()
 }
 
+// Marathon AppSetContainer calls MarathonApplication.SetContainer
 func (mc *Client) AppSetContainer(id string, to *Container) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -301,6 +329,7 @@ func (mc *Client) AppSetContainer(id string, to *Container) error {
 	return mc.ma.SetContainer(to)
 }
 
+// Marathon AppAddParameter calls MarathonApplication.AddParameter
 func (mc *Client) AppAddParameter(id string, param interface{}) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -309,6 +338,7 @@ func (mc *Client) AppAddParameter(id string, param interface{}) error {
 	return mc.ma.AddParameter(param)
 }
 
+// Marathon AppDelParameter calls MarathonApplication.DelParameter
 func (mc *Client) AppDelParameter(id string, param interface{}) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
@@ -317,11 +347,13 @@ func (mc *Client) AppDelParameter(id string, param interface{}) error {
 	return mc.ma.DelParameter(param)
 }
 
+// Marathon AppLoadFromFile calls MarathonApplication.LoadFromFile
 func (mc *Client) AppLoadFromFile(fileName string) error {
 
 	return mc.ma.LoadFromFile(fileName)
 }
 
+// Marathon AppDumpToFile calls MarathonApplication.DumpToFile
 func (mc *Client) AppDumpToFile(id, fileName string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {

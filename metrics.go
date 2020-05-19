@@ -1,5 +1,6 @@
 package marathon
 
+// Metrics Marathon server metrics results
 type Metrics struct {
 	Version  string `json:"version"`
 	Counters struct {

@@ -4,10 +4,12 @@ import (
 	"time"
 )
 
+// Array of
 type Queues struct {
 	Queue []QueueType `json:"queue"`
 }
 
+// QueueType holds definitions of Tasks queued up or waiting to be scheduled
 type QueueType struct {
 	App                    AppDefinition          `json:"app"`
 	Count                  int                    `json:"count"`
@@ -17,6 +19,7 @@ type QueueType struct {
 	LastUnusedOffers       []LastUnusedOffer      `json:"lastUnusedOffers,omitempty"`
 }
 
+// AppQueue holds definitions of Apps in Queue
 type AppQueue struct {
 	ID                    string          `json:"id"`
 	Instances             int             `json:"instances"`
@@ -35,22 +38,26 @@ type AppQueue struct {
 	VersionInfo           VersionInfo     `json:"versionInfo"`
 }
 
+// Delay Queue representation
 type Delay struct {
 	TimeLeftSeconds int  `json:"timeLeftSeconds"`
 	Overdue         bool `json:"overdue"`
 }
 
+// Processed Offers Summary info
 type ProcessedOffersSummary struct {
 	ProcessedOffersCount int `json:"processedOffersCount"`
 	UnusedOffersCount    int `json:"unusedOffersCount"`
 }
 
+// LastUnusedOffer Offers not used info
 type LastUnusedOffer struct {
 	Offer     Offer       `json:"offer"`
 	Timestamp interface{} `json:"timestamp"`
 	Reason    []string    `json:"reason"`
 }
 
+// Offer holds info of Mesos Offered resources
 type Offer struct {
 	ID         string      `json:"id"`
 	AgentID    string      `json:"agentId"`
@@ -59,6 +66,7 @@ type Offer struct {
 	Attributes []Attribute `json:"attributes"`
 }
 
+// Offer resource representation
 type Resource struct {
 	Name   string   `json:"name"`
 	Scalar int      `json:"scalar"`
@@ -67,6 +75,7 @@ type Resource struct {
 	Role   string   `json:"role"`
 }
 
+// Attribute of an Offer from Mesos
 type Attribute struct {
 	Name   string   `json:"name"`
 	Scalar int      `json:"scalar"`
@@ -74,6 +83,7 @@ type Attribute struct {
 	Set    []string `json:"set"`
 }
 
+// Range, scalar of an Offer from Mesos
 type Range struct {
 	Begin int `json:"begin"`
 	End   int `json:"end"`

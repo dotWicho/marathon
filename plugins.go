@@ -1,9 +1,11 @@
 package marathon
 
+// Array of
 type Plugins struct {
 	Plugins []Plugin `json:"plugins"`
 }
 
+// Plugin holds information of Marathon server plugins
 type Plugin struct {
 	ID             string   `json:"id"`
 	Implementation string   `json:"implementation"`
@@ -12,6 +14,7 @@ type Plugin struct {
 	Tags           []string `json:"tags"`
 }
 
+// Plguing version Info
 type Info struct {
 	Version string `json:"version"`
 	Array   []int  `json:"array"`

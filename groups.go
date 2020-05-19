@@ -8,21 +8,23 @@ import (
 	"time"
 )
 
+// Marathon Groups interface
 type groups interface {
 	SetClient(client *requist.Requist)
 
 	Get(id string) (*Groups, error)
-	Create(group *Group) error
+	Create(group *Groups) error
 	Destroy() error
 	Update(group *Group) error
 
-	Scale(instances int) bool
-	Stop(force bool) bool
-	Start() bool
-	Restart(force bool) bool
-	Suspend(force bool) bool
+	Scale(instances int) error
+	Stop(force bool) error
+	Start(instances int, force bool) error
+	Restart(force bool) error
+	Suspend(force bool) error
 }
 
+// Marathon Groups implementation
 type Groups struct {
 	client *requist.Requist
 
@@ -38,6 +40,7 @@ type Groups struct {
 	fail   *FailureMessage
 }
 
+// Group encapsulates the data definitions of a Marathon Group
 type Group struct {
 	ID           string        `json:"id"`
 	Apps         []App         `json:"apps"`
@@ -64,6 +67,7 @@ func NewMarathonGroups() *Groups {
 	return mg
 }
 
+// SetClient allows reuse of the main object client
 func (mg *Groups) SetClient(client *requist.Requist) {
 
 	if client != nil {
@@ -73,6 +77,7 @@ func (mg *Groups) SetClient(client *requist.Requist) {
 	}
 }
 
+// Get allows to establish the internal structures to referenced id
 func (mg *Groups) Get(id string) (*Groups, error) {
 
 	if len(id) > 0 {
@@ -86,6 +91,7 @@ func (mg *Groups) Get(id string) (*Groups, error) {
 	return nil, errors.New("id cannot be empty")
 }
 
+// Create allows create a Marathon group into server
 func (mg *Groups) Create(group *Group) error {
 
 	if _, err := mg.client.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
@@ -95,6 +101,7 @@ func (mg *Groups) Create(group *Group) error {
 	return nil
 }
 
+// Destroy erase a Marathon group from server
 func (mg *Groups) Destroy() error {
 
 	if mg.group != nil {
@@ -109,6 +116,7 @@ func (mg *Groups) Destroy() error {
 	return errors.New("group cannot be null nor empty")
 }
 
+// Update allows change values into Marathon group
 func (mg *Groups) Update(group *Group) error {
 
 	if _, err := mg.client.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
@@ -117,26 +125,31 @@ func (mg *Groups) Update(group *Group) error {
 	return nil
 }
 
+// Scale allows change instances numbers of a Marathon group applications
 func (mg *Groups) Scale(instances int) error {
 
 	return nil
 }
 
+// Stop sets instances of a Marathon group applications to 0
 func (mg *Groups) Stop(force bool) error {
 
 	return nil
 }
 
-func (mg *Groups) Start() error {
+// Start sets instances of a Marathon group applications to a number provided
+func (mg *Groups) Start(instances int, force bool) error {
 
 	return nil
 }
 
+// Restart use an endpoint to trigger restart for all applications in a Marathon group
 func (mg *Groups) Restart(force bool) error {
 
 	return nil
 }
 
+// Suspend is an alias for Stop
 func (mg *Groups) Suspend(force bool) error {
 
 	return nil

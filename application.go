@@ -65,7 +65,7 @@ type application interface {
 	applyChanges() error
 }
 
-// Marathon Application struct implements Methods of Marathon Application interface
+// Marathon Application implementation
 type Application struct {
 	client *requist.Requist
 	//
@@ -175,6 +175,7 @@ type AppVersions struct {
 
 //=== Marathon Application methods
 
+// NewMarathonApplication returns a new instance of Marathon application
 func NewMarathonApplication() *Application {
 	ma := &Application{
 		client:  nil,
@@ -187,6 +188,7 @@ func NewMarathonApplication() *Application {
 	return ma
 }
 
+// SetClient allows reuse of the main object client
 func (ma *Application) SetClient(client *requist.Requist) {
 
 	if client != nil {
@@ -196,6 +198,7 @@ func (ma *Application) SetClient(client *requist.Requist) {
 	}
 }
 
+// Get allows to establish the internal structures to referenced id
 func (ma *Application) Get(id string) (*Application, error) {
 
 	if len(id) > 0 {
@@ -209,6 +212,7 @@ func (ma *Application) Get(id string) (*Application, error) {
 	return nil, errors.New("id cannot be empty")
 }
 
+// Create allows create a Marathon application into server
 func (ma *Application) Create(app AppDefinition) (*Application, error) {
 
 	if len(app.ID) > 0 {
@@ -225,6 +229,7 @@ func (ma *Application) Create(app AppDefinition) (*Application, error) {
 	return nil, errors.New("incorrect application definition")
 }
 
+// Destroy erase a Marathon application from server
 func (ma *Application) Destroy() error {
 
 	if ma.app != nil {
@@ -239,6 +244,7 @@ func (ma *Application) Destroy() error {
 	return errors.New("app cannot be null nor empty")
 }
 
+// Update allows change values into Marathon application
 func (ma *Application) Update(app AppDefinition) error {
 
 	if _, err := ma.client.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
@@ -247,6 +253,7 @@ func (ma *Application) Update(app AppDefinition) error {
 	return nil
 }
 
+// Scale allows change instances numbers of a Marathon application
 func (ma *Application) Scale(instances int, force bool) error {
 
 	if ma.app != nil {
@@ -257,16 +264,19 @@ func (ma *Application) Scale(instances int, force bool) error {
 	return errors.New("app cannot be null nor empty")
 }
 
+// Stop sets instances of a Marathon application to 0
 func (ma *Application) Stop(force bool) error {
 
 	return ma.Scale(0, force)
 }
 
+// Start sets instances of a Marathon application to a number provided
 func (ma *Application) Start(instances int, force bool) error {
 
 	return ma.Scale(instances, force)
 }
 
+// Restart use an endpoint to trigger a Marathon application restart
 func (ma *Application) Restart(force bool) error {
 
 	if ma.app != nil {
@@ -284,11 +294,13 @@ func (ma *Application) Restart(force bool) error {
 	return errors.New("app cannot be null nor empty")
 }
 
+// Suspend is an alias to Stop
 func (ma *Application) Suspend(force bool) error {
 
 	return ma.Stop(force)
 }
 
+// Retag allows you to change the version of Docker image
 func (ma *Application) Retag(tag string) error {
 
 	if ma.app != nil {
@@ -309,59 +321,70 @@ func (ma *Application) Retag(tag string) error {
 	return errors.New("app cannot be null nor empty")
 }
 
+// Env returns the Environment Variables of a Marathon application
 func (ma *Application) Env() map[string]string {
 
 	return nil
 }
 
+// SetEnv allows set an environment variable into a Marathon application
 func (ma *Application) SetEnv(name, value string) error {
 
 	return ma.applyChanges()
 }
 
+// DelEnv deletes an environment variable from a Marathon application
 func (ma *Application) DelEnv(name string) error {
 
 	return nil
 }
 
+// Cpus returns the amount of cpus from a Marathon application
 func (ma *Application) Cpus() float64 {
 
 	return ma.app.App.Cpus
 }
 
+// SetCpus sets the amount of cpus of a Marathon application
 func (ma *Application) SetCpus(to float64) error {
 
 	ma.app.App.Cpus = to
 	return ma.applyChanges()
 }
 
+// Memory returns the amount of memory from a Marathon application
 func (ma *Application) Memory() float64 {
 
 	return ma.app.App.Mem
 }
 
+// SetMemory sets the amount of memory of a Marathon application
 func (ma *Application) SetMemory(to float64) error {
 
 	ma.app.App.Mem = to
 	return ma.applyChanges()
 }
 
+// Role returns task role of a Marathon application
 func (ma *Application) Role() string {
 
 	return ma.app.App.Role
 }
 
+// SetRole sets role of a Marathon application
 func (ma *Application) SetRole(to string) error {
 
 	ma.app.App.Role = to
 	return ma.applyChanges()
 }
 
+// Container returns the Container information of a Marathon application
 func (ma *Application) Container() *Container {
 
 	return &ma.app.App.Container
 }
 
+// SetContainer sets the Container information of a Marathon application
 func (ma *Application) SetContainer(to *Container) error {
 
 	ma.app.App.Container = Container{
@@ -378,16 +401,19 @@ func (ma *Application) SetContainer(to *Container) error {
 	return ma.applyChanges()
 }
 
+// AddParameter sets the key, value into parameters of a Marathon application
 func (ma *Application) AddParameter(param interface{}) error {
 
 	return ma.applyChanges()
 }
 
+// DelParameter erase the parameter referenced by key
 func (ma *Application) DelParameter(param interface{}) error {
 
 	return ma.applyChanges()
 }
 
+// LoadFromFile allows create or update a Marathon application from file
 func (ma *Application) LoadFromFile(fileName string) error {
 	app := &AppDefinition{}
 
@@ -399,6 +425,7 @@ func (ma *Application) LoadFromFile(fileName string) error {
 	return nil
 }
 
+// DumpToFile allows to create a .json file with the configuration of a Marathon application
 func (ma *Application) DumpToFile(fileName string) error {
 
 	if err := utils.WriteDataToJson(ma.app.App, fileName); err != nil {
@@ -407,6 +434,7 @@ func (ma *Application) DumpToFile(fileName string) error {
 	return nil
 }
 
+// applyChanges internal func, allows send all changes of a Marathon application to Marathon server
 func (ma *Application) applyChanges() error {
 
 	if ma.app != nil {
@@ -424,6 +452,7 @@ func (ma *Application) applyChanges() error {
 
 //=== Marathon Applications methods
 
+// NewMarathonApplications returns a new instance of Marathon applications
 func NewMarathonApplications() *Applications {
 	mas := &Applications{
 		client:  nil,
@@ -436,36 +465,43 @@ func NewMarathonApplications() *Applications {
 	return mas
 }
 
+// DestroyAll take a group of Marathon applications an destroys them
 func (ma *Applications) DestroyAll(force bool) error {
 
 	return nil
 }
 
+// ScaleAll take a group of Marathon applications an Scale them
 func (ma *Applications) ScaleAll(instances int) error {
 
 	return nil
 }
 
+// DestroyAll take a group of Marathon applications an stops them
 func (ma *Applications) StopAll(force bool) error {
 
 	return nil
 }
 
+// StartAll take a group of Marathon applications an starts them
 func (ma *Applications) StartAll() error {
 
 	return nil
 }
 
+// StartAll take a group of Marathon applications an restarts them
 func (ma *Applications) RestartAll(force bool) error {
 
 	return nil
 }
 
+// SuspendAll take a group of Marathon applications an suspends them
 func (ma *Applications) SuspendAll(force bool) error {
 
 	return nil
 }
 
+// AsMap returns a dictionary of Marathons applications index by app Id
 func (ma *Applications) AsMap() map[string]AppDefinition {
 
 	return nil
