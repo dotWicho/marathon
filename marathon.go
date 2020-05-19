@@ -7,7 +7,7 @@ import (
 )
 
 type client interface {
-	NewFromURL(base *url.URL) *Client
+	New(base *url.URL) *Client
 	Connect(baseUrl string)
 	StatusCode() int
 	CheckConnection() error
@@ -64,7 +64,7 @@ type Client struct {
 }
 
 // NewClient returns a new Client given a Marathon server base url
-func NewClient(base string) *Client {
+func New(base string) *Client {
 
 	baseURL, err := url.Parse(base)
 	if err != nil {
@@ -72,7 +72,7 @@ func NewClient(base string) *Client {
 	}
 
 	client := &Client{}
-	return client.NewFromURL(baseURL)
+	return client.New(baseURL)
 }
 
 // NewClientFromURL returns a new Client given a Marathon server base url in URL type
@@ -84,10 +84,10 @@ func NewClientFromURL(base *url.URL) *Client {
 	}
 
 	client := &Client{}
-	return client.NewFromURL(baseURL)
+	return client.New(baseURL)
 }
 
-func (mc *Client) NewFromURL(base *url.URL) *Client {
+func (mc *Client) New(base *url.URL) *Client {
 
 	marathon := &Client{}
 	marathon.client = requist.New(base.String())
@@ -99,6 +99,7 @@ func (mc *Client) NewFromURL(base *url.URL) *Client {
 		}
 		marathon.auth = marathon.client.GetBasicAuth()
 	}
+	marathon.client.Accept("application/json")
 
 	marathon.ma = NewMarathonApplication()
 	marathon.ma.client = marathon.client
