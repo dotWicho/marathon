@@ -25,7 +25,8 @@ type client interface {
 	AppRestart(id string, force bool) error
 	AppSuspend(id string, force bool) error
 
-	AppRetag(id string, tag string) error
+	AppGetTag(id string) (string, error)
+	AppSetTag(id string, tag string) error
 
 	AppEnv(id string) map[string]string
 	AppSetEnv(id string, name, value string) error
@@ -218,13 +219,22 @@ func (mc *Client) AppSuspend(id string, force bool) error {
 	return mc.ma.Suspend(force)
 }
 
-// Marathon AppRetag calls MarathonApplication.Retag
-func (mc *Client) AppRetag(id string, tag string) error {
+// Marathon AppGetTag calls MarathonApplication.GetTag
+func (mc *Client) AppGetTag(id string) (string, error) {
+
+	if _, err := mc.ma.Get(id); err != nil {
+		return "", err
+	}
+	return mc.ma.GetTag()
+}
+
+// Marathon AppSetTag calls MarathonApplication.SetTag
+func (mc *Client) AppSetTag(id string, tag string) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.Retag(tag)
+	return mc.ma.SetTag(tag)
 }
 
 // Marathon AppEnv calls MarathonApplication.Env

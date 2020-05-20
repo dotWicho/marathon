@@ -38,7 +38,8 @@ type application interface {
 	Restart(force bool) error
 	Suspend(force bool) error
 
-	Retag(tag string) error
+	GetTag() (string, error)
+	SetTag(tag string) error
 
 	Env() map[string]string
 	SetEnv(name, value string) error
@@ -272,22 +273,27 @@ func (ma *Application) Suspend(force bool) error {
 }
 
 // Retag allows you to change the version of Docker image
-func (ma *Application) Retag(tag string) error {
+func (ma *Application) GetTag() (string, error) {
 
 	if ma.app != nil {
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
+		re := regexp.MustCompile(DockerImageRegEx)
+		elements := re.FindStringSubmatch(ma.app.App.Container.Docker.Image)
 
-		ma.client.AddQueryParam("force", "true")
+		return elements[7], nil
+	}
+	return "", errors.New("app cannot be null nor empty")
+}
 
+// Retag allows you to change the version of Docker image
+func (ma *Application) SetTag(tag string) error {
+
+	if ma.app != nil {
 		re := regexp.MustCompile(DockerImageRegEx)
 		elements := re.FindStringSubmatch(ma.app.App.Container.Docker.Image)
 
 		ma.app.App.Container.Docker.Image = fmt.Sprintf("%s%s/%s:%s", elements[1], elements[4], elements[6], tag)
 
-		if _, err := ma.client.BodyAsJSON(ma.app.App).Patch(path, ma.deploy, ma.fail); err != nil {
-			return err
-		}
-		return nil
+		return ma.applyChanges()
 	}
 	return errors.New("app cannot be null nor empty")
 }
