@@ -7,6 +7,8 @@ const (
 	marathonApiApps string = marathonApiBase + "/apps/"
 	// Groups endpoint
 	marathonApiGroups string = marathonApiBase + "/groups/"
+	// Deployments endpoint
+	marathonApiDeployments string = marathonApiBase + "/deployments/"
 	// Check connection endpoint resource
 	marathonApiPing string = "/ping"
 	// RegEx used for docker images
