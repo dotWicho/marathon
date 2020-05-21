@@ -81,7 +81,7 @@ type Application struct {
 	fail   *FailureMessage
 }
 
-//=== Marathon JSON Entities definition
+//=== Marathon Applications JSON Entities definition
 
 // AppDefinition encapsulates the data definitions of a Marathon App
 type AppDefinition struct {
