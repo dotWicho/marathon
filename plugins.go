@@ -7,15 +7,15 @@ type Plugins struct {
 
 // Plugin holds information of Marathon server plugins
 type Plugin struct {
-	ID             string   `json:"id"`
-	Implementation string   `json:"implementation"`
-	Info           Info     `json:"info"`
-	Plugin         string   `json:"plugin"`
-	Tags           []string `json:"tags"`
+	ID             string     `json:"id"`
+	Implementation string     `json:"implementation"`
+	Info           PluginInfo `json:"info"`
+	Plugin         string     `json:"plugin"`
+	Tags           []string   `json:"tags"`
 }
 
 // Plguing version Info
-type Info struct {
+type PluginInfo struct {
 	Version string `json:"version"`
 	Array   []int  `json:"array"`
 	Test    bool   `json:"test"`

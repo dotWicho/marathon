@@ -54,11 +54,18 @@ type client interface {
 // Marathon application implementation
 type Client struct {
 	client *requist.Requist
+
+	//
+	info Info
+
 	//
 	ma *Application
 	mg *Groups
 	md *Deployment
 	mt *Tasks
+
+	//
+	fail FailureMessage
 
 	//
 	auth    string
@@ -137,10 +144,38 @@ func (mc *Client) CheckConnection() error {
 	if _, err := mc.client.Get(marathonApiPing, nil, nil); err != nil {
 		return err
 	}
-	if mc.StatusCode() != 200 {
+	if mc.StatusCode() == 200 {
+		if _, err := mc.client.Get(marathonApiInfo, mc.info, mc.fail); err != nil {
+			return err
+		}
+	} else {
 		return errors.New("unable to connect")
 	}
 	return nil
+}
+
+// MarathonVersion returns version of Marathon
+func (mc *Client) MarathonVersion() string {
+
+	return mc.info.Version
+}
+
+// MarathonLeader returns actual Marathon leader server
+func (mc *Client) MarathonLeader() string {
+
+	return mc.info.Leader
+}
+
+// MarathonFramework returns the id of this Marathon on Mesos
+func (mc *Client) MarathonFramework() string {
+
+	return mc.info.FrameworkID
+}
+
+// MarathonZookeeper return Zookeeper server(s) address
+func (mc *Client) MarathonZookeeper() string {
+
+	return mc.info.ZookeeperConfig.Zk
 }
 
 // SetBasicAuth used if we need to set login parameters
