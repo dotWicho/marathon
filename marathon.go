@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/dotWicho/requist"
 	"net/url"
+	"time"
 )
 
 // Marathon application interface
@@ -12,7 +13,14 @@ type client interface {
 	Connect(baseUrl string)
 	StatusCode() int
 	CheckConnection() error
+	SetTimeout(timeout time.Duration)
 	SetBasicAuth(username, password string)
+
+	// Marathon Info interface
+	MarathonVersion() string
+	MarathonLeader() string
+	MarathonFramework() string
+	MarathonZookeeper() string
 
 	// Marathon AppDefinition interface
 	AppCreate(app AppDefinition) error
@@ -26,26 +34,26 @@ type client interface {
 	AppSuspend(id string, force bool) error
 
 	AppGetTag(id string) (string, error)
-	AppSetTag(id string, tag string) error
+	AppSetTag(id string, tag string, force bool) error
 
 	AppEnv(id string) map[string]string
-	AppSetEnv(id string, name, value string) error
-	AppDelEnv(id string, name string) error
+	AppSetEnv(id string, name, value string, force bool) error
+	AppDelEnv(id string, name string, force bool) error
 
 	AppCpus(id string) float64
-	AppSetCpus(id string, to float64) error
+	AppSetCpus(id string, to float64, force bool) error
 
 	AppMemory(id string) float64
-	AppSetMemory(id string, to float64) error
+	AppSetMemory(id string, to float64, force bool) error
 
 	AppRole(id string) string
-	AppSetRole(id string, to string) error
+	AppSetRole(id string, to string, force bool) error
 
 	AppContainer(id string) *Container
-	AppSetContainer(id string, to *Container) error
+	AppSetContainer(id string, to *Container, force bool) error
 
-	AppAddParameter(id string, key, value string) error
-	AppDelParameter(id string, key string) error
+	AppAddParameter(id string, key, value string, force bool) error
+	AppDelParameter(id string, key string, force bool) error
 
 	AppLoadFromFile(fileName string) error
 	AppDumpToFile(id, fileName string) error
@@ -53,7 +61,8 @@ type client interface {
 
 // Marathon application implementation
 type Client struct {
-	client *requist.Requist
+	client  *requist.Requist
+	timeout time.Duration
 
 	//
 	info Info
@@ -111,11 +120,12 @@ func (mc *Client) New(base *url.URL) *Client {
 		}
 		marathon.auth = marathon.client.GetBasicAuth()
 	}
+	marathon.SetTimeout(defaultDeploymentTimeout)
 	marathon.client.Accept("application/json")
 	marathon.client.SetHeader("Cache-Control", "no-cache")
 	marathon.client.SetHeader("Accept-Encoding", "identity")
 
-	marathon.ma = NewMarathonApplication()
+	marathon.ma = NewMarathonApplication(mc.timeout)
 	marathon.ma.client = marathon.client
 	marathon.ma.auth = marathon.auth
 
@@ -154,6 +164,21 @@ func (mc *Client) CheckConnection() error {
 	return nil
 }
 
+// SetBasicAuth used if we need to set login parameters
+func (mc *Client) SetTimeout(timeout time.Duration) {
+
+	mc.timeout = timeout
+	mc.client.SetClientTimeout(mc.timeout)
+}
+
+// SetBasicAuth used if we need to set login parameters
+func (mc *Client) SetBasicAuth(username, password string) {
+
+	mc.client.SetBasicAuth(username, password)
+}
+
+//=== Marathon Info interface definitions ===
+
 // MarathonVersion returns version of Marathon
 func (mc *Client) MarathonVersion() string {
 
@@ -176,12 +201,6 @@ func (mc *Client) MarathonFramework() string {
 func (mc *Client) MarathonZookeeper() string {
 
 	return mc.info.ZookeeperConfig.Zk
-}
-
-// SetBasicAuth used if we need to set login parameters
-func (mc *Client) SetBasicAuth(username, password string) {
-
-	mc.client.SetBasicAuth(username, password)
 }
 
 //=== Marathon AppDefinition interface definitions ===
@@ -264,12 +283,12 @@ func (mc *Client) AppGetTag(id string) (string, error) {
 }
 
 // Marathon AppSetTag calls MarathonApplication.SetTag
-func (mc *Client) AppSetTag(id string, tag string) error {
+func (mc *Client) AppSetTag(id string, tag string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.SetTag(tag)
+	return mc.ma.SetTag(tag, force)
 }
 
 // Marathon AppEnv calls MarathonApplication.Env
@@ -282,21 +301,21 @@ func (mc *Client) AppEnv(id string) map[string]string {
 }
 
 // Marathon AppSetEnv calls MarathonApplication.SetEnv
-func (mc *Client) AppSetEnv(id, name, value string) error {
+func (mc *Client) AppSetEnv(id, name, value string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.SetEnv(name, value)
+	return mc.ma.SetEnv(name, value, force)
 }
 
 // Marathon AppDelEnv calls MarathonApplication.DelEnv
-func (mc *Client) AppDelEnv(id, name string) error {
+func (mc *Client) AppDelEnv(id, name string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.DelEnv(name)
+	return mc.ma.DelEnv(name, force)
 }
 
 // Marathon AppCpus calls MarathonApplication.Cpus
@@ -309,12 +328,12 @@ func (mc *Client) AppCpus(id string) float64 {
 }
 
 // Marathon AppSetCpus calls MarathonApplication.SetCpus
-func (mc *Client) AppSetCpus(id string, to float64) error {
+func (mc *Client) AppSetCpus(id string, to float64, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.SetCpus(to)
+	return mc.ma.SetCpus(to, force)
 }
 
 // Marathon AppMemory calls MarathonApplication.Memory
@@ -327,12 +346,12 @@ func (mc *Client) AppMemory(id string) float64 {
 }
 
 // Marathon AppSetMemory calls MarathonApplication.SetMemory
-func (mc *Client) AppSetMemory(id string, to float64) error {
+func (mc *Client) AppSetMemory(id string, to float64, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.SetCpus(to)
+	return mc.ma.SetCpus(to, force)
 }
 
 // Marathon AppRole calls MarathonApplication.Role
@@ -345,12 +364,12 @@ func (mc *Client) AppRole(id string) string {
 }
 
 // Marathon AppSetRole calls MarathonApplication.SetRole
-func (mc *Client) AppSetRole(id, to string) error {
+func (mc *Client) AppSetRole(id, to string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.SetRole(to)
+	return mc.ma.SetRole(to, force)
 }
 
 // Marathon AppContainer calls MarathonApplication.Container
@@ -363,30 +382,30 @@ func (mc *Client) AppContainer(id string) *Container {
 }
 
 // Marathon AppSetContainer calls MarathonApplication.SetContainer
-func (mc *Client) AppSetContainer(id string, to *Container) error {
+func (mc *Client) AppSetContainer(id string, to *Container, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.SetContainer(to)
+	return mc.ma.SetContainer(to, force)
 }
 
 // Marathon AppAddParameter calls MarathonApplication.AddParameter
-func (mc *Client) AppAddParameter(id string, key, value string) error {
+func (mc *Client) AppAddParameter(id string, key, value string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.AddParameter(key, value)
+	return mc.ma.AddParameter(key, value, force)
 }
 
 // Marathon AppDelParameter calls MarathonApplication.DelParameter
-func (mc *Client) AppDelParameter(id string, key string) error {
+func (mc *Client) AppDelParameter(id string, key string, force bool) error {
 
 	if _, err := mc.ma.Get(id); err != nil {
 		return err
 	}
-	return mc.ma.DelParameter(key)
+	return mc.ma.DelParameter(key, force)
 }
 
 // Marathon AppLoadFromFile calls MarathonApplication.LoadFromFile
