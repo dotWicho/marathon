@@ -14,7 +14,7 @@ import (
 type deployments interface {
 	SetClient(client *requist.Requist)
 	Get() (*Deployments, error)
-	Destroy(id string) error
+	Rollback(id string) error
 	Await(id string, timeout time.Duration) error
 }
 
@@ -108,8 +108,8 @@ func (md *Deployments) Get() (*Deployments, error) {
 	return md, nil
 }
 
-// Destroy cancel a Marathon deployment
-func (md *Deployments) Destroy(id string) error {
+// Rollback cancel a Marathon deployment
+func (md *Deployments) Rollback(id string) error {
 
 	if md.deployments != nil {
 
@@ -126,4 +126,5 @@ func (md *Deployments) Destroy(id string) error {
 // Await wait a Marathon deployment finish or timeout
 func (md *Deployments) Await(id string, timeout time.Duration) error {
 
+	return nil
 }
