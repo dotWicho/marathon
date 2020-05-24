@@ -1,6 +1,10 @@
 package marathon
 
+import "time"
+
 const (
+	// Default timeout for Deployments
+	defaultDeploymentTimeout = 10 * time.Second
 	// root of Marathon API Rest
 	marathonApiBase string = "/v2"
 	// Applications endpoint
