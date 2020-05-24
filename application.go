@@ -39,36 +39,37 @@ type application interface {
 	Suspend(force bool) error
 
 	GetTag() (string, error)
-	SetTag(tag string) error
+	SetTag(tag string, force bool) error
 
 	Env() map[string]string
-	SetEnv(name, value string) error
-	DelEnv(name string) error
+	SetEnv(name, value string, force bool) error
+	DelEnv(name string, force bool) error
 
 	Cpus() float64
-	SetCpus(to float64) error
+	SetCpus(to float64, force bool) error
 
 	Memory() float64
-	SetMemory(to float64) error
+	SetMemory(to float64, force bool) error
 
 	Role() string
-	SetRole(to string) error
+	SetRole(to string, force bool) error
 
 	Container() *Container
-	SetContainer(to *Container) error
+	SetContainer(to *Container, force bool) error
 
-	AddParameter(key, value string) error
-	DelParameter(key string) error
+	AddParameter(key, value string, force bool) error
+	DelParameter(key string, force bool) error
 
 	LoadFromFile(fileName string) error
 	DumpToFile(fileName string) error
 
-	applyChanges() error
+	applyChanges(force bool) error
 }
 
 // Marathon Application implementation
 type Application struct {
-	client *requist.Requist
+	client  *requist.Requist
+	timeout time.Duration
 	//
 	app *App
 
@@ -148,9 +149,10 @@ type AppVersions struct {
 //=== Marathon Application methods
 
 // NewMarathonApplication returns a new instance of Marathon application
-func NewMarathonApplication() *Application {
+func NewMarathonApplication(timeout time.Duration) *Application {
 	ma := &Application{
 		client:  nil,
+		timeout: timeout,
 		app:     &App{},
 		baseUrl: "",
 		auth:    "",
@@ -231,7 +233,7 @@ func (ma *Application) Scale(instances int, force bool) error {
 	if ma.app != nil {
 		ma.app.App.Instances = instances
 
-		return ma.applyChanges()
+		return ma.applyChanges(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -285,7 +287,7 @@ func (ma *Application) GetTag() (string, error) {
 }
 
 // Retag allows you to change the version of Docker image
-func (ma *Application) SetTag(tag string) error {
+func (ma *Application) SetTag(tag string, force bool) error {
 
 	if ma.app != nil {
 		re := regexp.MustCompile(DockerImageRegEx)
@@ -293,7 +295,7 @@ func (ma *Application) SetTag(tag string) error {
 
 		ma.app.App.Container.Docker.Image = fmt.Sprintf("%s%s/%s:%s", elements[1], elements[4], elements[6], tag)
 
-		return ma.applyChanges()
+		return ma.applyChanges(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -305,15 +307,15 @@ func (ma *Application) Env() map[string]string {
 }
 
 // SetEnv allows set an environment variable into a Marathon application
-func (ma *Application) SetEnv(name, value string) error {
+func (ma *Application) SetEnv(name, value string, force bool) error {
 
-	return ma.applyChanges()
+	return ma.applyChanges(force)
 }
 
 // DelEnv deletes an environment variable from a Marathon application
-func (ma *Application) DelEnv(name string) error {
+func (ma *Application) DelEnv(name string, force bool) error {
 
-	return nil
+	return ma.applyChanges(force)
 }
 
 // Cpus returns the amount of cpus from a Marathon application
@@ -323,10 +325,10 @@ func (ma *Application) Cpus() float64 {
 }
 
 // SetCpus sets the amount of cpus of a Marathon application
-func (ma *Application) SetCpus(to float64) error {
+func (ma *Application) SetCpus(to float64, force bool) error {
 
 	ma.app.App.Cpus = to
-	return ma.applyChanges()
+	return ma.applyChanges(force)
 }
 
 // Memory returns the amount of memory from a Marathon application
@@ -336,10 +338,10 @@ func (ma *Application) Memory() float64 {
 }
 
 // SetMemory sets the amount of memory of a Marathon application
-func (ma *Application) SetMemory(to float64) error {
+func (ma *Application) SetMemory(to float64, force bool) error {
 
 	ma.app.App.Mem = to
-	return ma.applyChanges()
+	return ma.applyChanges(force)
 }
 
 // Role returns task role of a Marathon application
@@ -349,10 +351,10 @@ func (ma *Application) Role() string {
 }
 
 // SetRole sets role of a Marathon application
-func (ma *Application) SetRole(to string) error {
+func (ma *Application) SetRole(to string, force bool) error {
 
 	ma.app.App.Role = to
-	return ma.applyChanges()
+	return ma.applyChanges(force)
 }
 
 // Container returns the Container information of a Marathon application
@@ -362,7 +364,7 @@ func (ma *Application) Container() *Container {
 }
 
 // SetContainer sets the Container information of a Marathon application
-func (ma *Application) SetContainer(to *Container) error {
+func (ma *Application) SetContainer(to *Container, force bool) error {
 
 	ma.app.App.Container = Container{
 		Type: to.Type,
@@ -375,19 +377,19 @@ func (ma *Application) SetContainer(to *Container) error {
 		Volumes:      to.Volumes,
 		PortMappings: to.PortMappings,
 	}
-	return ma.applyChanges()
+	return ma.applyChanges(force)
 }
 
 // AddParameter sets the key, value into parameters of a Marathon application
-func (ma *Application) AddParameter(key, value string) error {
+func (ma *Application) AddParameter(key, value string, force bool) error {
 
-	return ma.applyChanges()
+	return ma.applyChanges(force)
 }
 
 // DelParameter erase the parameter referenced by key
-func (ma *Application) DelParameter(key string) error {
+func (ma *Application) DelParameter(key string, force bool) error {
 
-	return ma.applyChanges()
+	return ma.applyChanges(force)
 }
 
 // LoadFromFile allows create or update a Marathon application from file
@@ -412,16 +414,19 @@ func (ma *Application) DumpToFile(fileName string) error {
 }
 
 // applyChanges internal func, allows send all changes of a Marathon application to Marathon server
-func (ma *Application) applyChanges() error {
+func (ma *Application) applyChanges(force bool) error {
 
 	if ma.app != nil {
 		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
 
-		ma.client.AddQueryParam("force", "true")
-
+		if force {
+			ma.client.AddQueryParam("force", "true")
+		}
 		if _, err := ma.client.BodyAsJSON(ma.app.App).Patch(path, ma.deploy, ma.fail); err != nil {
 			return err
 		}
+		// TODO: Deployment wait for ma.timeout
+		fmt.Printf("Deploy Id: %s => date: %v", ma.deploy.ID, ma.deploy.Version)
 		return nil
 	}
 	return errors.New("app cannot be null nor empty")
