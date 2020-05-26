@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dotWicho/marathon/pkg/utils"
-	"github.com/dotWicho/requist"
 	"time"
 )
 
@@ -12,7 +11,6 @@ import (
 
 // Marathon Deployments interface
 type deployments interface {
-	SetClient(client *requist.Requist)
 	Get() (*Deployments, error)
 	Rollback(id string) error
 	Await(id string, timeout time.Duration) error
@@ -20,7 +18,7 @@ type deployments interface {
 
 // Marathon Deployments implementation
 type Deployments struct {
-	client *requist.Requist
+	marathon *Client
 	//
 	deployments *deployment
 
@@ -89,20 +87,23 @@ type Response struct {
 	Version time.Time `json:"version"`
 }
 
-// SetClient allows reuse of the main object client
-func (md *Deployments) SetClient(client *requist.Requist) {
-
-	if client != nil {
-		md.client = client
-	} else {
-		panic(errors.New("client reference cannot be null"))
+// NewDeployments returns a new instance of Marathon deployments implementation
+func NewDeployments(marathon *Client) *Deployments {
+	_deployment := &Deployments{
+		marathon:    marathon,
+		deployments: &deployment{},
+		baseUrl:     marathon.baseUrl,
+		auth:        marathon.auth,
+		deploy:      &Response{},
+		fail:        &FailureMessage{},
 	}
+	return _deployment
 }
 
 // Get allows to establish the internal structures
 func (md *Deployments) Get() (*Deployments, error) {
 
-	if _, err := md.client.BodyAsJSON(nil).Get(marathonApiDeployments, md.deployments, md.fail); err != nil {
+	if _, err := md.marathon.Session.BodyAsJSON(nil).Get(marathonApiDeployments, md.deployments, md.fail); err != nil {
 		return nil, errors.New("unable to get deployments")
 	}
 	return md, nil
@@ -115,7 +116,7 @@ func (md *Deployments) Rollback(id string) error {
 
 		path := fmt.Sprintf("%s%s", marathonApiDeployments, utils.DelInitialSlash(id))
 
-		if _, err := md.client.BodyAsJSON(nil).Delete(path, md.deploy, md.fail); err != nil {
+		if _, err := md.marathon.Session.BodyAsJSON(nil).Delete(path, md.deploy, md.fail); err != nil {
 			return err
 		}
 		return nil
