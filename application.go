@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dotWicho/marathon/pkg/utils"
-	"github.com/dotWicho/requist"
 	"regexp"
 	"time"
 )
@@ -25,8 +24,6 @@ type Apps struct {
 
 // Marathon Application interface
 type application interface {
-	SetClient(client *requist.Requist)
-
 	Get(id string) (*Application, error)
 	Create(app AppDefinition) (*Application, error)
 	Destroy() error
@@ -68,8 +65,8 @@ type application interface {
 
 // Marathon Application implementation
 type Application struct {
-	client  *requist.Requist
-	timeout time.Duration
+	marathon *Client
+	timeout  time.Duration
 	//
 	app *App
 
@@ -146,31 +143,21 @@ type AppVersions struct {
 	Versions []time.Time `json:"versions"`
 }
 
+// NewApplication returns a new instance of Marathon application implementation
+func NewApplication(marathon *Client) *Application {
+	_application := &Application{
+		marathon: marathon,
+		timeout:  marathon.timeout,
+		app:      &App{},
+		baseUrl:  marathon.baseUrl,
+		auth:     marathon.auth,
+		deploy:   &Response{},
+		fail:     &FailureMessage{},
+	}
+	return _application
+}
+
 //=== Marathon Application methods
-
-// NewMarathonApplication returns a new instance of Marathon application
-func NewMarathonApplication(timeout time.Duration) *Application {
-	ma := &Application{
-		client:  nil,
-		timeout: timeout,
-		app:     &App{},
-		baseUrl: "",
-		auth:    "",
-		deploy:  &Response{},
-		fail:    &FailureMessage{},
-	}
-	return ma
-}
-
-// SetClient allows reuse of the main object client
-func (ma *Application) SetClient(client *requist.Requist) {
-
-	if client != nil {
-		ma.client = client
-	} else {
-		panic(errors.New("client reference cannot be null"))
-	}
-}
 
 // Get allows to establish the internal structures to referenced id
 func (ma *Application) Get(id string) (*Application, error) {
@@ -178,7 +165,7 @@ func (ma *Application) Get(id string) (*Application, error) {
 	if len(id) > 0 {
 		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(id))
 
-		if _, err := ma.client.BodyAsJSON(nil).Get(path, ma.app, ma.fail); err != nil {
+		if _, err := ma.marathon.Session.BodyAsJSON(nil).Get(path, ma.app, ma.fail); err != nil {
 			return nil, errors.New(fmt.Sprintf("unable to get add id = %s", id))
 		}
 		return ma, nil
@@ -192,7 +179,7 @@ func (ma *Application) Create(app AppDefinition) (*Application, error) {
 	if len(app.ID) > 0 {
 		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(app.ID))
 
-		if _, err := ma.client.BodyAsJSON(app).Put(path, ma.deploy, ma.fail); err != nil {
+		if _, err := ma.marathon.Session.BodyAsJSON(app).Put(path, ma.deploy, ma.fail); err != nil {
 			return nil, err
 		}
 		ma.app = &App{
@@ -210,7 +197,7 @@ func (ma *Application) Destroy() error {
 
 		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
 
-		if _, err := ma.client.BodyAsJSON(nil).Delete(path, ma.deploy, ma.fail); err != nil {
+		if _, err := ma.marathon.Session.BodyAsJSON(nil).Delete(path, ma.deploy, ma.fail); err != nil {
 			return err
 		}
 		return nil
@@ -221,7 +208,7 @@ func (ma *Application) Destroy() error {
 // Update allows change values into Marathon application
 func (ma *Application) Update(app AppDefinition) error {
 
-	if _, err := ma.client.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
+	if _, err := ma.marathon.Session.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
 		return err
 	}
 	return nil
@@ -257,10 +244,10 @@ func (ma *Application) Restart(force bool) error {
 		path := fmt.Sprintf("%s%s/restart", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
 
 		if force {
-			ma.client.AddQueryParam("force", "true")
+			ma.marathon.Session.AddQueryParam("force", "true")
 		}
 
-		if _, err := ma.client.BodyAsJSON(nil).Patch(path, ma.deploy, ma.fail); err != nil {
+		if _, err := ma.marathon.Session.BodyAsJSON(nil).Patch(path, ma.deploy, ma.fail); err != nil {
 			return err
 		}
 		return nil
@@ -420,9 +407,9 @@ func (ma *Application) applyChanges(force bool) error {
 		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
 
 		if force {
-			ma.client.AddQueryParam("force", "true")
+			ma.marathon.Session.AddQueryParam("force", "true")
 		}
-		if _, err := ma.client.BodyAsJSON(ma.app.App).Patch(path, ma.deploy, ma.fail); err != nil {
+		if _, err := ma.marathon.Session.BodyAsJSON(ma.app.App).Patch(path, ma.deploy, ma.fail); err != nil {
 			return err
 		}
 		// TODO: Deployment wait for ma.timeout
