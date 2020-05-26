@@ -4,14 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dotWicho/marathon/pkg/utils"
-	"github.com/dotWicho/requist"
 	"time"
 )
 
 // Marathon Groups interface
 type groups interface {
-	SetClient(client *requist.Requist)
-
 	Get(id string) (*Groups, error)
 	Create(group *Groups) error
 	Destroy() error
@@ -26,7 +23,7 @@ type groups interface {
 
 // Marathon Groups implementation
 type Groups struct {
-	client *requist.Requist
+	marathon *Client
 
 	//
 	group *Group
@@ -55,26 +52,17 @@ type Group struct {
 
 //=== Marathon Application methods
 
-func NewMarathonGroups() *Groups {
-	mg := &Groups{
-		client:  nil,
-		group:   &Group{},
-		baseUrl: "",
-		auth:    "",
-		deploy:  &Response{},
-		fail:    &FailureMessage{},
+// NewGroups returns a new instance of Marathon groups implementation
+func NewGroups(marathon *Client) *Groups {
+	_groups := &Groups{
+		marathon: marathon,
+		group:    &Group{},
+		baseUrl:  marathon.baseUrl,
+		auth:     marathon.auth,
+		deploy:   &Response{},
+		fail:     &FailureMessage{},
 	}
-	return mg
-}
-
-// SetClient allows reuse of the main object client
-func (mg *Groups) SetClient(client *requist.Requist) {
-
-	if client != nil {
-		mg.client = client
-	} else {
-		panic(errors.New("client reference cannot be null"))
-	}
+	return _groups
 }
 
 // Get allows to establish the internal structures to referenced id
@@ -83,18 +71,18 @@ func (mg *Groups) Get(id string) (*Groups, error) {
 	if len(id) > 0 {
 		path := fmt.Sprintf("%s%s", marathonApiGroups, utils.DelInitialSlash(id))
 
-		if _, err := mg.client.BodyAsJSON(nil).Get(path, mg.group, mg.fail); err != nil {
-			return nil, errors.New(fmt.Sprintf("unable to get add id = %s", id))
+		if _, err := mg.marathon.Session.BodyAsJSON(nil).Get(path, mg.group, mg.fail); err != nil {
+			return nil, errors.New(fmt.Sprintf("unable to get group id = %s", id))
 		}
 		return mg, nil
 	}
-	return nil, errors.New("id cannot be empty")
+	return nil, errors.New("id cannot be null nor empty")
 }
 
 // Create allows create a Marathon group into server
 func (mg *Groups) Create(group *Group) error {
 
-	if _, err := mg.client.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
+	if _, err := mg.marathon.Session.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
 		return err
 	}
 	mg.group = group
@@ -108,7 +96,7 @@ func (mg *Groups) Destroy() error {
 
 		path := fmt.Sprintf("%s%s", marathonApiGroups, utils.DelInitialSlash(mg.group.ID))
 
-		if _, err := mg.client.BodyAsJSON(nil).Delete(path, mg.deploy, mg.fail); err != nil {
+		if _, err := mg.marathon.Session.BodyAsJSON(nil).Delete(path, mg.deploy, mg.fail); err != nil {
 			return err
 		}
 		return nil
@@ -119,7 +107,7 @@ func (mg *Groups) Destroy() error {
 // Update allows change values into Marathon group
 func (mg *Groups) Update(group *Group) error {
 
-	if _, err := mg.client.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
+	if _, err := mg.marathon.Session.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
 		return err
 	}
 	return nil
