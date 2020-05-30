@@ -30,10 +30,10 @@ type Client struct {
 	timeout time.Duration
 
 	//
-	info Info
+	info *Info
 
 	//
-	fail FailureMessage
+	fail *FailureMessage
 
 	//
 	auth    string
@@ -52,8 +52,8 @@ func New(base string) *Client {
 	return client.New(baseURL)
 }
 
-// NewClientFromURL returns a new Client given a Marathon server base url in URL type
-func NewClientFromURL(base *url.URL) *Client {
+// NewFromURL returns a new Client given a Marathon server base url in URL type
+func NewFromURL(base *url.URL) *Client {
 
 	baseURL, err := url.Parse(base.String())
 	if err != nil {
@@ -72,6 +72,8 @@ func (mc *Client) New(base *url.URL) *Client {
 	marathon := &Client{}
 	marathon.Session = requist.New(base.String())
 	marathon.baseUrl = base.String()
+	marathon.info = &Info{}
+	marathon.fail = &FailureMessage{}
 
 	if base.User.String() != "" {
 		if pass, check := base.User.Password(); check {
