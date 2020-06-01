@@ -303,7 +303,7 @@ func (ma *Application) SetTag(tag string, force bool) error {
 // Env returns the Environment Variables of a Marathon application
 func (ma *Application) Env() map[string]string {
 
-	return nil
+	return ma.app.App.Env
 }
 
 // SetEnv allows set an environment variable into a Marathon application
@@ -361,6 +361,20 @@ func (ma *Application) SetRole(to string, force bool) error {
 func (ma *Application) Container() *Container {
 
 	return &ma.app.App.Container
+}
+
+// Parameters returns Container Params of a Marathon application
+func (ma *Application) Parameters() map[string]string {
+
+	if len(ma.app.App.Container.Docker.Parameters) > 0 {
+
+		var paramsMap map[string]string
+		for _, val := range ma.app.App.Container.Docker.Parameters {
+			paramsMap[val.Key] = val.Value
+		}
+		return paramsMap
+	}
+	return nil
 }
 
 // SetContainer sets the Container information of a Marathon application
