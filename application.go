@@ -54,11 +54,12 @@ type application interface {
 	Container() *Container
 	SetContainer(to *Container, force bool) error
 
+	Parameters() (map[string]string, error)
 	AddParameter(key, value string, force bool) error
 	DelParameter(key string, force bool) error
 
-	LoadFromFile(fileName string) error
-	DumpToFile(fileName string) error
+	LoadFromFile(fileName, fileType string) error
+	DumpToFile(fileName, fileType string) error
 
 	applyChanges(force bool) error
 }
@@ -290,18 +291,20 @@ func (ma *Application) SetTag(tag string, force bool) error {
 // Env returns the Environment Variables of a Marathon application
 func (ma *Application) Env() map[string]string {
 
-	return nil
+	return ma.app.App.Env
 }
 
 // SetEnv allows set an environment variable into a Marathon application
 func (ma *Application) SetEnv(name, value string, force bool) error {
 
+	ma.app.App.Env[name] = value
 	return ma.applyChanges(force)
 }
 
 // DelEnv deletes an environment variable from a Marathon application
 func (ma *Application) DelEnv(name string, force bool) error {
 
+	delete(ma.app.App.Env, name)
 	return ma.applyChanges(force)
 }
 
@@ -367,37 +370,99 @@ func (ma *Application) SetContainer(to *Container, force bool) error {
 	return ma.applyChanges(force)
 }
 
+// Parameters returns all Docker paramters of a Marathon application
+func (ma *Application) Parameters() (map[string]string, error) {
+
+	if len(ma.app.App.Container.Docker.Parameters) > 0 {
+
+		paramsMap := make(map[string]string)
+		for _, val := range ma.app.App.Container.Docker.Parameters {
+			paramsMap[val.Key] = val.Value
+		}
+		return paramsMap, nil
+	}
+	return nil, errors.New(fmt.Sprintf("Marathon app %s has no Docker parameters", ma.app.App.ID))
+}
+
 // AddParameter sets the key, value into parameters of a Marathon application
 func (ma *Application) AddParameter(key, value string, force bool) error {
 
-	return ma.applyChanges(force)
+	exist := false
+	if len(ma.app.App.Container.Docker.Parameters) > 0 {
+		for _, val := range ma.app.App.Container.Docker.Parameters {
+			if val.Key == key {
+				exist = true
+			}
+		}
+	}
+	if !exist {
+		ma.app.App.Container.Docker.Parameters = append(ma.app.App.Container.Docker.Parameters, DockerParameters{
+			Key:   key,
+			Value: value,
+		})
+		return ma.applyChanges(force)
+	}
+	return errors.New(fmt.Sprintf("parameters %s already exist in Marathon app %s", key, ma.app.App.ID))
 }
 
 // DelParameter erase the parameter referenced by key
 func (ma *Application) DelParameter(key string, force bool) error {
 
-	return ma.applyChanges(force)
+	toRemove := -1
+
+	if len(ma.app.App.Container.Docker.Parameters) > 0 {
+		for index, val := range ma.app.App.Container.Docker.Parameters {
+			if val.Key == key {
+				toRemove = index
+			}
+		}
+	}
+	if toRemove >= 0 {
+		length := len(ma.app.App.Container.Docker.Parameters)
+
+		ma.app.App.Container.Docker.Parameters[toRemove] = ma.app.App.Container.Docker.Parameters[length-1]
+		ma.app.App.Container.Docker.Parameters[length-1] = DockerParameters{
+			Key:   "",
+			Value: "",
+		}
+		ma.app.App.Container.Docker.Parameters = ma.app.App.Container.Docker.Parameters[:length-1]
+
+		return ma.applyChanges(force)
+	}
+	return errors.New(fmt.Sprintf("parameters %s dont exist in Marathon app %s", key, ma.app.App.ID))
 }
 
 // LoadFromFile allows create or update a Marathon application from file
-func (ma *Application) LoadFromFile(fileName string) error {
-	app := &AppDefinition{}
+func (ma *Application) LoadFromFile(fileName, fileType string) error {
 
 	var err error
-	if err = utils.LoadDataFromJson(app, fileName); err == nil {
-		_, err = ma.Create(*app)
-		return err
+
+	app := &AppDefinition{}
+	switch fileType {
+	case "json":
+		err = utils.LoadDataFromJson(app, fileName)
+	case "yaml":
+		err = utils.LoadDataFromYaml(app, fileName)
 	}
-	return nil
+
+	_, err = ma.Create(*app)
+
+	return err
 }
 
 // DumpToFile allows to create a .json file with the configuration of a Marathon application
-func (ma *Application) DumpToFile(fileName string) error {
+func (ma *Application) DumpToFile(fileName, fileType string) error {
 
-	if err := utils.WriteDataToJson(ma.app.App, fileName); err != nil {
-		return err
+	var err error
+
+	switch fileType {
+	case "json":
+		err = utils.WriteDataToJson(ma.app.App, fileName)
+	case "yaml":
+		err = utils.WriteDataToYaml(ma.app.App, fileName)
 	}
-	return nil
+
+	return err
 }
 
 // applyChanges internal func, allows send all changes of a Marathon application to Marathon server
