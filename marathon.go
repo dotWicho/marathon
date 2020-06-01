@@ -52,6 +52,7 @@ type client interface {
 	AppContainer(id string) *Container
 	AppSetContainer(id string, to *Container, force bool) error
 
+	AppParams(id string) (map[string]string, error)
 	AppAddParameter(id string, key, value string, force bool) error
 	AppDelParameter(id string, key string, force bool) error
 
@@ -65,7 +66,7 @@ type Client struct {
 	timeout time.Duration
 
 	//
-	info Info
+	info *Info
 
 	//
 	ma *Application
@@ -113,6 +114,7 @@ func (mc *Client) New(base *url.URL) *Client {
 	marathon := &Client{}
 	marathon.client = requist.New(base.String())
 	marathon.baseUrl = base.String()
+	marathon.info = &Info{}
 
 	if base.User.String() != "" {
 		if pass, check := base.User.Password(); check {
@@ -388,6 +390,15 @@ func (mc *Client) AppSetContainer(id string, to *Container, force bool) error {
 		return err
 	}
 	return mc.ma.SetContainer(to, force)
+}
+
+// Marathon AppParams calls MarathonApplication.Parameters
+func (mc *Client) AppParams(id string) (map[string]string, error) {
+
+	if _, err := mc.ma.Get(id); err != nil {
+		return nil, err
+	}
+	return mc.ma.Parameters(), nil
 }
 
 // Marathon AppAddParameter calls MarathonApplication.AddParameter

@@ -16,7 +16,7 @@ const (
 	// Check connection endpoint resource
 	marathonApiPing string = "/ping"
 	// Server Info endpoint
-	marathonApiInfo string = "/info"
+	marathonApiInfo string = marathonApiBase + "/info"
 	// RegEx used for docker images
 	DockerImageRegEx = `^(([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)(?::(\d+))?)((?:([a-zA-Z0-9-\/]+)?))\/([a-zA-Z0-9-_]+):(.*)$`
 )
