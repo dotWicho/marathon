@@ -398,7 +398,7 @@ func (mc *Client) AppParams(id string) (map[string]string, error) {
 	if _, err := mc.ma.Get(id); err != nil {
 		return nil, err
 	}
-	return mc.ma.Parameters(), nil
+	return mc.ma.Parameters()
 }
 
 // Marathon AppAddParameter calls MarathonApplication.AddParameter
