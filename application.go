@@ -57,6 +57,7 @@ type application interface {
 	Container() *Container
 	SetContainer(to *Container, force bool) error
 
+	Parameters() (map[string]string, error)
 	AddParameter(key, value string, force bool) error
 	DelParameter(key string, force bool) error
 
@@ -364,7 +365,7 @@ func (ma *Application) Container() *Container {
 }
 
 // Parameters returns Container Params of a Marathon application
-func (ma *Application) Parameters() map[string]string {
+func (ma *Application) Parameters() (map[string]string, error) {
 
 	if len(ma.app.App.Container.Docker.Parameters) > 0 {
 
@@ -372,9 +373,9 @@ func (ma *Application) Parameters() map[string]string {
 		for _, val := range ma.app.App.Container.Docker.Parameters {
 			paramsMap[val.Key] = val.Value
 		}
-		return paramsMap
+		return paramsMap, nil
 	}
-	return nil
+	return nil, errors.New(fmt.Sprintf("Marathon app %s has no Docker parameters", ma.app.App.ID))
 }
 
 // SetContainer sets the Container information of a Marathon application
