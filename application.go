@@ -15,11 +15,6 @@ type App struct {
 	App AppDefinition `json:"app"`
 }
 
-// Apps wraps an AppDefinition array returned by the Marathon API
-type Apps struct {
-	Apps []AppDefinition `json:"apps"`
-}
-
 //===
 
 // Marathon Application interface
@@ -29,6 +24,7 @@ type application interface {
 	Destroy() error
 	Update(app AppDefinition) error
 
+	Instances() int
 	Scale(instances int, force bool) error
 	Stop(force bool) error
 	Start(instances int, force bool) error
@@ -215,6 +211,15 @@ func (ma *Application) Update(app AppDefinition) error {
 	return nil
 }
 
+// Instances return actual instances of a Marathon application
+func (ma *Application) Instances() int {
+
+	if ma.app != nil {
+		return ma.app.App.Instances
+	}
+	return 0
+}
+
 // Scale allows change instances numbers of a Marathon application
 func (ma *Application) Scale(instances int, force bool) error {
 
@@ -370,7 +375,7 @@ func (ma *Application) SetContainer(to *Container, force bool) error {
 	return ma.applyChanges(force)
 }
 
-// Parameters returns all Docker paramters of a Marathon application
+// Parameters returns all Docker parameters of a Marathon application
 func (ma *Application) Parameters() (map[string]string, error) {
 
 	if len(ma.app.App.Container.Docker.Parameters) > 0 {
