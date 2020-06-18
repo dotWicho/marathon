@@ -483,7 +483,7 @@ func (ma *Application) applyChanges(force bool) error {
 			return err
 		}
 		// TODO: Deployment wait for ma.timeout
-		fmt.Printf("Deploy Id: %s => date: %v", ma.deploy.ID, ma.deploy.Version)
+		fmt.Printf("Deploy Id: %s => date: %v\n", ma.deploy.ID, ma.deploy.Version)
 		return nil
 	}
 	return errors.New("app cannot be null nor empty")
