@@ -25,7 +25,7 @@ type AppSummary struct {
 
 // Marathon Application interface
 type applications interface {
-	Get(id string) (*Applications, error)
+	Get(filter string) (*Applications, error)
 	Scale(instances int, force bool) error
 	Stop(force bool) error
 	Start(instances int, force bool) error
@@ -69,25 +69,25 @@ func NewApplications(marathon *Client) *Applications {
 }
 
 // Get allows to establish the internal structures to referenced id
-func (ma *Applications) Get(id string) (*Applications, error) {
+func (ma *Applications) Get(filter string) (*Applications, error) {
 
-	if len(id) > 0 {
+	if len(filter) > 0 {
 
 		_apps := &apps{}
 
-		if _, err := ma.marathon.Session.BodyAsJSON(nil).Get("", _apps, ma.fail); err != nil {
-			return nil, errors.New(fmt.Sprintf("unable to get add id = %s", id))
+		if _, err := ma.marathon.Session.BodyAsJSON(nil).Get(marathonApiApps, _apps, ma.fail); err != nil {
+			return nil, errors.New(fmt.Sprintf("unable to get apps with filter = %s", filter))
 		}
 
 		for _, app := range _apps.Apps {
-			if strings.HasPrefix(app.ID, id) {
+			if strings.HasPrefix(app.ID, filter) {
 				ma.apps.Apps = append(ma.apps.Apps, app)
 			}
 		}
 
 		return ma, nil
 	}
-	return nil, errors.New("id cannot be empty")
+	return nil, errors.New("filter cannot be null nor empty")
 }
 
 // Scale allows change instances numbers of a Marathon applications
