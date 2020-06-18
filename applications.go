@@ -35,7 +35,10 @@ type applications interface {
 	LoadFromFile(fileName, fileType string) error
 	DumpToFile(fileName, fileType string) error
 
+	Apply() error
+
 	AsMap() map[string]AppSummary
+	AsRaw() []AppDefinition
 }
 
 // Marathon Application implementation
@@ -182,6 +185,28 @@ func (ma *Applications) DumpToFile(fileName, fileType string) error {
 	return err
 }
 
+// Apply make a patch to each app
+func (ma *Applications) Apply() error {
+
+	if ma.apps != nil {
+		if len(ma.apps.Apps) > 0 {
+			for _, app := range ma.apps.Apps {
+				path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(app.ID))
+
+				ma.marathon.Session.AddQueryParam("force", "true")
+
+				if _, err := ma.marathon.Session.BodyAsJSON(app).Patch(path, ma.deploy, ma.fail); err != nil {
+					return err
+				}
+				// TODO: Deployment wait for ma.timeout
+				fmt.Printf("Deploy Id: %s => date: %v\n", ma.deploy.ID, ma.deploy.Version)
+			}
+			return nil
+		}
+	}
+	return errors.New("apps cannot be null nor empty")
+}
+
 // AsMap returns a map of Summary Info
 func (ma *Applications) AsMap() map[string]AppSummary {
 
@@ -197,4 +222,10 @@ func (ma *Applications) AsMap() map[string]AppSummary {
 		}
 	}
 	return mapApps
+}
+
+// AsRaw returns a pointer of Application Info
+func (ma *Applications) AsRaw() []AppDefinition {
+
+	return ma.apps.Apps
 }
