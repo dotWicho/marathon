@@ -3,7 +3,6 @@ package marathon
 import (
 	"errors"
 	"fmt"
-	"github.com/dotWicho/marathon/pkg/utils"
 	"time"
 )
 
@@ -16,14 +15,14 @@ type deployments interface {
 	Await(id string, timeout time.Duration) error
 }
 
-// Marathon Deployments implementation
+// Deployments is Marathon Deployments implementation
 type Deployments struct {
 	marathon *Client
 	//
-	deployments *deployment
+	deployments []Deployment
 
 	//
-	baseUrl string
+	baseURL string
 	auth    string
 
 	//
@@ -32,9 +31,6 @@ type Deployments struct {
 }
 
 //=== Marathon Deployments JSON Entities definition
-
-// Array of Deployment
-type deployment []Deployment
 
 // Deployment holds Marathons deploys on course
 type Deployment struct {
@@ -70,18 +66,18 @@ type LastResponse struct {
 	Status      int    `json:"status"`
 }
 
-// That, a Step representation
+// Step on actions representation
 type Step struct {
 	Actions []Action `json:"actions"`
 }
 
-// That, a action representation
+// Action representation
 type Action struct {
 	Action string `json:"action"`
 	App    string `json:"app"`
 }
 
-// Marathon API response when launch changes via deployments
+// Response is default Marathon API response when launch changes via deployments
 type Response struct {
 	ID      string    `json:"deploymentId"`
 	Version time.Time `json:"version"`
@@ -89,22 +85,26 @@ type Response struct {
 
 // NewDeployments returns a new instance of Marathon deployments implementation
 func NewDeployments(marathon *Client) *Deployments {
-	_deployment := &Deployments{
-		marathon:    marathon,
-		deployments: &deployment{},
-		baseUrl:     marathon.baseUrl,
-		auth:        marathon.auth,
-		deploy:      &Response{},
-		fail:        &FailureMessage{},
+
+	if marathon != nil {
+		_deployment := &Deployments{
+			marathon:    marathon,
+			deployments: nil,
+			baseURL:     marathon.baseURL,
+			auth:        marathon.auth,
+			deploy:      &Response{},
+			fail:        &FailureMessage{},
+		}
+		return _deployment
 	}
-	return _deployment
+	return nil
 }
 
 // Get allows to establish the internal structures
 func (md *Deployments) Get() (*Deployments, error) {
 
-	if _, err := md.marathon.Session.BodyAsJSON(nil).Get(marathonApiDeployments, md.deployments, md.fail); err != nil {
-		return nil, errors.New("unable to get deployments")
+	if _, err := md.marathon.Session.BodyAsJSON(nil).Get(marathonAPIDeployments, &md.deployments, md.fail); err != nil {
+		return md, errors.New("unable to get deployments")
 	}
 	return md, nil
 }
@@ -112,9 +112,9 @@ func (md *Deployments) Get() (*Deployments, error) {
 // Rollback cancel a Marathon deployment
 func (md *Deployments) Rollback(id string) error {
 
-	if md.deployments != nil {
+	if len(id) > 0 {
 
-		path := fmt.Sprintf("%s%s", marathonApiDeployments, utils.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathonAPIDeployments, id)
 
 		if _, err := md.marathon.Session.BodyAsJSON(nil).Delete(path, md.deploy, md.fail); err != nil {
 			return err
@@ -127,5 +127,40 @@ func (md *Deployments) Rollback(id string) error {
 // Await wait a Marathon deployment finish or timeout
 func (md *Deployments) Await(id string, timeout time.Duration) error {
 
+	// define break condition
+	var found bool
+
+	// Start time is Now
+	start := time.Now()
+
+	// Finish is Now + timeout
+	finish := start.Add(timeout)
+
+	Logger.Debug("Checking for deployment Id = %s", id)
+
+	// iterate while deploy exists or timeout don't reached
+	for {
+		// Deployment not found by default
+		found = false
+
+		if _, err := md.Get(); err != nil {
+			break
+		}
+
+		for _, deploy := range md.deployments {
+			if id == deploy.ID {
+				found = true
+			}
+		}
+
+		if !found || time.Now().After(finish) {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	if found {
+		return fmt.Errorf("exit by timeout... deployment still existing")
+	}
 	return nil
 }

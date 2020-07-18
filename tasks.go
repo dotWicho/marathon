@@ -4,18 +4,18 @@ import (
 	"time"
 )
 
-// Envelope structure for Taks response from Marathon server
+// Task is an Envelope structure for Tasks response from Marathon server
 type Task struct {
-	Task Tsk `json:"task"`
+	Task TaskMarathon `json:"task"`
 }
 
-// Array of
+// Tasks Array of Task
 type Tasks struct {
-	Tasks []Tsk `json:"tasks"`
+	Tasks []TaskMarathon `json:"tasks"`
 }
 
-// Tsk, Marathon Task representation
-type Tsk struct {
+// TaskMarathon is Marathon Task representation
+type TaskMarathon struct {
 	AppID              string              `json:"appId"`
 	HealthCheckResults []HealthcheckResult `json:"healthCheckResults"`
 	Host               string              `json:"host"`
@@ -32,7 +32,7 @@ type Tsk struct {
 	Role               string              `json:"role"`
 }
 
-// IP and protocol information of a Taks
+// IPAddress IP and protocol information of a Task
 type IPAddress struct {
 	IPAddress string `json:"ipAddress"`
 	Protocol  string `json:"protocol"`

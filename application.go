@@ -3,8 +3,10 @@ package marathon
 import (
 	"errors"
 	"fmt"
-	"github.com/dotWicho/marathon/pkg/utils"
+	"github.com/dotWicho/utilities"
+	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -19,12 +21,14 @@ type App struct {
 
 // Marathon Application interface
 type application interface {
-	Get(id string) (*Application, error)
-	Create(app AppDefinition) (*Application, error)
+	Get(id string) *Application
+	Set(app AppDefinition) *Application
+	Create(app AppDefinition) *Application
 	Destroy() error
 	Update(app AppDefinition) error
 
 	Instances() int
+
 	Scale(instances int, force bool) error
 	Stop(force bool) error
 	Start(instances int, force bool) error
@@ -54,21 +58,22 @@ type application interface {
 	AddParameter(key, value string, force bool) error
 	DelParameter(key string, force bool) error
 
-	LoadFromFile(fileName, fileType string) error
-	DumpToFile(fileName, fileType string) error
+	Load(fileName string) *Application
+	Dump(fileName string) error
 
 	applyChanges(force bool) error
 }
 
-// Marathon Application implementation
+// Application is a Marathon Application implementation
 type Application struct {
 	marathon *Client
 	timeout  time.Duration
+
 	//
 	app *App
 
 	//
-	baseUrl string
+	baseURL string
 	auth    string
 
 	//
@@ -76,7 +81,7 @@ type Application struct {
 	fail   *FailureMessage
 }
 
-//=== Marathon Applications JSON Entities definition
+//=== Marathon FilteredApps JSON Entities definition
 
 // AppDefinition encapsulates the data definitions of a Marathon App
 type AppDefinition struct {
@@ -142,59 +147,75 @@ type AppVersions struct {
 
 // NewApplication returns a new instance of Marathon application implementation
 func NewApplication(marathon *Client) *Application {
-	_application := &Application{
-		marathon: marathon,
-		timeout:  marathon.timeout,
-		app:      &App{},
-		baseUrl:  marathon.baseUrl,
-		auth:     marathon.auth,
-		deploy:   &Response{},
-		fail:     &FailureMessage{},
+
+	if marathon != nil {
+		return &Application{
+			marathon: marathon,
+			timeout:  marathon.timeout,
+			app:      &App{},
+			baseURL:  marathon.baseURL,
+			auth:     marathon.auth,
+			deploy:   &Response{},
+			fail:     &FailureMessage{},
+		}
 	}
-	return _application
+	return nil
 }
 
 //=== Marathon Application methods
 
 // Get allows to establish the internal structures to referenced id
-func (ma *Application) Get(id string) (*Application, error) {
+func (ma *Application) Get(id string) *Application {
 
 	if len(id) > 0 {
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(id))
+		ma.clear()
+
+		Logger.Debug("Application: Get %s %+v", id, ma.app.App)
+
+		path := fmt.Sprintf("%s%s", marathonAPIApps, utilities.DelInitialSlash(id))
 
 		if _, err := ma.marathon.Session.BodyAsJSON(nil).Get(path, ma.app, ma.fail); err != nil {
-			return nil, errors.New(fmt.Sprintf("unable to get add id = %s", id))
+			Logger.Debug("Application: Get failed [%+v]", err)
+			ma.clear()
 		}
-		return ma, nil
 	}
-	return nil, errors.New("id cannot be empty")
+	return ma
+}
+
+// Set allows to establish the internal structures from a given app
+func (ma *Application) Set(app AppDefinition) *Application {
+
+	if len(app.ID) > 0 {
+		Logger.Debug("Application: Set id = %s", app.ID)
+		ma.clear()
+		ma.app.App = app
+	}
+	return ma
 }
 
 // Create allows create a Marathon application into server
-func (ma *Application) Create(app AppDefinition) (*Application, error) {
+func (ma *Application) Create(app AppDefinition) *Application {
 
 	if len(app.ID) > 0 {
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(app.ID))
+		Logger.Debug("Application: Create id = [%s] body = %+v", app.ID, app)
 
-		if _, err := ma.marathon.Session.BodyAsJSON(app).Put(path, ma.deploy, ma.fail); err != nil {
-			return nil, err
-		}
-		ma.app = &App{
-			App: app,
-		}
-		return ma, nil
+		ma.app.App = app
+		_ = ma.applyChanges(true)
 	}
-	return nil, errors.New("incorrect application definition")
+	return ma
 }
 
 // Destroy erase a Marathon application from server
 func (ma *Application) Destroy() error {
 
-	if ma.app != nil {
+	if len(ma.app.App.ID) > 0 {
+		Logger.Debug("Application: Destroy id = [%s] body = %+v", ma.app.App.ID, ma.app.App)
 
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
+		path := fmt.Sprintf("%s%s", marathonAPIApps, utilities.DelInitialSlash(ma.app.App.ID))
 
+		ma.clear()
 		if _, err := ma.marathon.Session.BodyAsJSON(nil).Delete(path, ma.deploy, ma.fail); err != nil {
+			Logger.Debug("Application: Destroy failed [%+v]", err)
 			return err
 		}
 		return nil
@@ -205,36 +226,34 @@ func (ma *Application) Destroy() error {
 // Update allows change values into Marathon application
 func (ma *Application) Update(app AppDefinition) error {
 
-	if _, err := ma.marathon.Session.BodyAsJSON(app).Post(marathonApiApps, ma.deploy, ma.fail); err != nil {
-		return err
+	if len(app.ID) > 0 {
+		Logger.Debug("Application: Update id = [%s] body = %+v", app.ID, app)
+
+		ma.app.App = app
+		return ma.applyChanges(true)
 	}
-	return nil
+	return errors.New("app cannot be null nor empty")
 }
 
 // Instances return actual instances of a Marathon application
 func (ma *Application) Instances() int {
 
-	if ma.app != nil {
+	if len(ma.app.App.ID) > 0 {
 		return ma.app.App.Instances
 	}
-	return 0
+	return -1
 }
 
 // Scale allows change instances numbers of a Marathon application
 func (ma *Application) Scale(instances int, force bool) error {
 
-	if ma.app != nil {
+	if len(ma.app.App.ID) > 0 {
+		Logger.Debug("Application: Scale %s to %d force=%v", ma.app.App.ID, instances, force)
 		ma.app.App.Instances = instances
 
 		return ma.applyChanges(force)
 	}
 	return errors.New("app cannot be null nor empty")
-}
-
-// Stop sets instances of a Marathon application to 0
-func (ma *Application) Stop(force bool) error {
-
-	return ma.Scale(0, force)
 }
 
 // Start sets instances of a Marathon application to a number provided
@@ -243,17 +262,26 @@ func (ma *Application) Start(instances int, force bool) error {
 	return ma.Scale(instances, force)
 }
 
+// Stop sets instances of a Marathon application to 0
+func (ma *Application) Stop(force bool) error {
+
+	return ma.Scale(0, force)
+}
+
 // Restart use an endpoint to trigger a Marathon application restart
 func (ma *Application) Restart(force bool) error {
 
-	if ma.app != nil {
-		path := fmt.Sprintf("%s%s/restart", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
+	if len(ma.app.App.ID) > 0 {
+		Logger.Debug("Application: Restart id = [%s] force = %v", ma.app.App.ID, force)
+
+		path := fmt.Sprintf("%s%s/restart", marathonAPIApps, utilities.DelInitialSlash(ma.app.App.ID))
 
 		if force {
 			ma.marathon.Session.AddQueryParam("force", "true")
 		}
 
-		if _, err := ma.marathon.Session.BodyAsJSON(nil).Patch(path, ma.deploy, ma.fail); err != nil {
+		if _, err := ma.marathon.Session.BodyAsJSON(nil).Post(path, ma.deploy, ma.fail); err != nil {
+			Logger.Debug("Application: Restart failed [%+v]", err)
 			return err
 		}
 		return nil
@@ -267,22 +295,22 @@ func (ma *Application) Suspend(force bool) error {
 	return ma.Stop(force)
 }
 
-// Retag allows you to change the version of Docker image
+// GetTag allows you to change the version of Docker image
 func (ma *Application) GetTag() (string, error) {
 
-	if ma.app != nil {
+	if len(ma.app.App.ID) > 0 {
 		re := regexp.MustCompile(DockerImageRegEx)
 		elements := re.FindStringSubmatch(ma.app.App.Container.Docker.Image)
 
-		return elements[7], nil
+		return elements[len(elements)-1], nil
 	}
 	return "", errors.New("app cannot be null nor empty")
 }
 
-// Retag allows you to change the version of Docker image
+// SetTag allows you to change the version of Docker image
 func (ma *Application) SetTag(tag string, force bool) error {
 
-	if ma.app != nil {
+	if len(ma.app.App.ID) > 0 {
 		re := regexp.MustCompile(DockerImageRegEx)
 		elements := re.FindStringSubmatch(ma.app.App.Container.Docker.Image)
 
@@ -296,195 +324,280 @@ func (ma *Application) SetTag(tag string, force bool) error {
 // Env returns the Environment Variables of a Marathon application
 func (ma *Application) Env() map[string]string {
 
-	return ma.app.App.Env
+	if len(ma.app.App.ID) > 0 {
+
+		return ma.app.App.Env
+	}
+	return nil
 }
 
 // SetEnv allows set an environment variable into a Marathon application
 func (ma *Application) SetEnv(name, value string, force bool) error {
 
-	ma.app.App.Env[name] = value
-	return ma.applyChanges(force)
+	if len(ma.app.App.ID) > 0 {
+
+		ma.app.App.Env[name] = value
+		return ma.applyChanges(force)
+	}
+	return errors.New("app cannot be null nor empty")
 }
 
 // DelEnv deletes an environment variable from a Marathon application
 func (ma *Application) DelEnv(name string, force bool) error {
 
-	delete(ma.app.App.Env, name)
-	return ma.applyChanges(force)
+	if len(ma.app.App.ID) > 0 {
+
+		delete(ma.app.App.Env, name)
+		return ma.applyChanges(force)
+	}
+	return errors.New("app cannot be null nor empty")
 }
 
 // Cpus returns the amount of cpus from a Marathon application
 func (ma *Application) Cpus() float64 {
 
-	return ma.app.App.Cpus
+	if len(ma.app.App.ID) > 0 {
+
+		return ma.app.App.Cpus
+	}
+	return -1
 }
 
 // SetCpus sets the amount of cpus of a Marathon application
 func (ma *Application) SetCpus(to float64, force bool) error {
 
-	ma.app.App.Cpus = to
-	return ma.applyChanges(force)
+	if len(ma.app.App.ID) > 0 {
+
+		ma.app.App.Cpus = to
+		return ma.applyChanges(force)
+	}
+	return errors.New("app cannot be null nor empty")
 }
 
 // Memory returns the amount of memory from a Marathon application
 func (ma *Application) Memory() float64 {
 
-	return ma.app.App.Mem
+	if len(ma.app.App.ID) > 0 {
+
+		return ma.app.App.Mem
+	}
+	return -1
 }
 
 // SetMemory sets the amount of memory of a Marathon application
 func (ma *Application) SetMemory(to float64, force bool) error {
 
-	ma.app.App.Mem = to
-	return ma.applyChanges(force)
+	if len(ma.app.App.ID) > 0 {
+
+		ma.app.App.Mem = to
+		return ma.applyChanges(force)
+	}
+	return errors.New("app cannot be null nor empty")
 }
 
 // Role returns task role of a Marathon application
 func (ma *Application) Role() string {
 
-	return ma.app.App.Role
+	if len(ma.app.App.ID) > 0 {
+
+		return ma.app.App.Role
+	}
+	return ""
 }
 
 // SetRole sets role of a Marathon application
 func (ma *Application) SetRole(to string, force bool) error {
 
-	ma.app.App.Role = to
-	return ma.applyChanges(force)
+	if len(ma.app.App.ID) > 0 {
+
+		ma.app.App.Role = to
+		return ma.applyChanges(force)
+	}
+	return errors.New("app cannot be null nor empty")
 }
 
 // Container returns the Container information of a Marathon application
 func (ma *Application) Container() *Container {
 
-	return &ma.app.App.Container
+	if len(ma.app.App.ID) > 0 {
+
+		return &ma.app.App.Container
+	}
+	return nil
 }
 
 // SetContainer sets the Container information of a Marathon application
 func (ma *Application) SetContainer(to *Container, force bool) error {
 
-	ma.app.App.Container = Container{
-		Type: to.Type,
-		Docker: Docker{
-			ForcePullImage: to.Docker.ForcePullImage,
-			Image:          to.Docker.Image,
-			Parameters:     to.Docker.Parameters,
-			Privileged:     to.Docker.Privileged,
-		},
-		Volumes:      to.Volumes,
-		PortMappings: to.PortMappings,
+	if len(ma.app.App.ID) > 0 {
+
+		ma.app.App.Container = Container{
+			Type: to.Type,
+			Docker: Docker{
+				ForcePullImage: to.Docker.ForcePullImage,
+				Image:          to.Docker.Image,
+				Parameters:     to.Docker.Parameters,
+				Privileged:     to.Docker.Privileged,
+			},
+			Volumes:      to.Volumes,
+			PortMappings: to.PortMappings,
+		}
+		return ma.applyChanges(force)
 	}
-	return ma.applyChanges(force)
+	return errors.New("app cannot be null nor empty")
 }
 
 // Parameters returns all Docker parameters of a Marathon application
 func (ma *Application) Parameters() (map[string]string, error) {
 
-	if len(ma.app.App.Container.Docker.Parameters) > 0 {
+	if len(ma.app.App.ID) > 0 {
 
-		paramsMap := make(map[string]string)
-		for _, val := range ma.app.App.Container.Docker.Parameters {
-			paramsMap[val.Key] = val.Value
+		if len(ma.app.App.Container.Docker.Parameters) > 0 {
+
+			paramsMap := make(map[string]string)
+			for _, val := range ma.app.App.Container.Docker.Parameters {
+				paramsMap[val.Key] = val.Value
+			}
+			return paramsMap, nil
 		}
-		return paramsMap, nil
+		return nil, fmt.Errorf("the Marathon app %s has no Docker parameters", ma.app.App.ID)
 	}
-	return nil, errors.New(fmt.Sprintf("Marathon app %s has no Docker parameters", ma.app.App.ID))
+	return nil, errors.New("app cannot be null nor empty")
 }
 
 // AddParameter sets the key, value into parameters of a Marathon application
 func (ma *Application) AddParameter(key, value string, force bool) error {
 
-	exist := false
-	if len(ma.app.App.Container.Docker.Parameters) > 0 {
-		for _, val := range ma.app.App.Container.Docker.Parameters {
-			if val.Key == key {
-				exist = true
+	if len(ma.app.App.ID) > 0 {
+
+		exist := false
+		index := -1
+
+		// Are there any parameters defined?
+		if len(ma.app.App.Container.Docker.Parameters) > 0 {
+
+			// Iterate searching for our passed key
+			for idx, val := range ma.app.App.Container.Docker.Parameters {
+				if val.Key == key {
+					exist = true
+					index = idx
+				}
 			}
 		}
+		// Exists?
+		if exist {
+			// Chenge it
+			ma.app.App.Container.Docker.Parameters[index].Value = value
+		} else {
+			// Create, append it
+			ma.app.App.Container.Docker.Parameters = append(ma.app.App.Container.Docker.Parameters, DockerParameters{
+				Key:   key,
+				Value: value,
+			})
+			return ma.applyChanges(force)
+		}
 	}
-	if !exist {
-		ma.app.App.Container.Docker.Parameters = append(ma.app.App.Container.Docker.Parameters, DockerParameters{
-			Key:   key,
-			Value: value,
-		})
-		return ma.applyChanges(force)
-	}
-	return errors.New(fmt.Sprintf("parameters %s already exist in Marathon app %s", key, ma.app.App.ID))
+	return errors.New("app cannot be null nor empty")
 }
 
 // DelParameter erase the parameter referenced by key
 func (ma *Application) DelParameter(key string, force bool) error {
 
-	toRemove := -1
+	if len(ma.app.App.ID) > 0 {
+		toRemove := -1
 
-	if len(ma.app.App.Container.Docker.Parameters) > 0 {
-		for index, val := range ma.app.App.Container.Docker.Parameters {
-			if val.Key == key {
-				toRemove = index
+		if len(ma.app.App.Container.Docker.Parameters) > 0 {
+			for index, val := range ma.app.App.Container.Docker.Parameters {
+				if val.Key == key {
+					toRemove = index
+				}
 			}
 		}
-	}
-	if toRemove >= 0 {
-		length := len(ma.app.App.Container.Docker.Parameters)
+		if toRemove >= 0 {
+			length := len(ma.app.App.Container.Docker.Parameters)
 
-		ma.app.App.Container.Docker.Parameters[toRemove] = ma.app.App.Container.Docker.Parameters[length-1]
-		ma.app.App.Container.Docker.Parameters[length-1] = DockerParameters{
-			Key:   "",
-			Value: "",
+			ma.app.App.Container.Docker.Parameters[toRemove] = ma.app.App.Container.Docker.Parameters[length-1]
+			ma.app.App.Container.Docker.Parameters[length-1] = DockerParameters{
+				Key:   "",
+				Value: "",
+			}
+			ma.app.App.Container.Docker.Parameters = ma.app.App.Container.Docker.Parameters[:length-1]
+
+			return ma.applyChanges(force)
 		}
-		ma.app.App.Container.Docker.Parameters = ma.app.App.Container.Docker.Parameters[:length-1]
-
-		return ma.applyChanges(force)
+		return fmt.Errorf("parameters %s dont exist in Marathon app %s", key, ma.app.App.ID)
 	}
-	return errors.New(fmt.Sprintf("parameters %s dont exist in Marathon app %s", key, ma.app.App.ID))
+	return errors.New("app cannot be null nor empty")
 }
 
-// LoadFromFile allows create or update a Marathon application from file
-func (ma *Application) LoadFromFile(fileName, fileType string) error {
+// Load allows create or update a Marathon application from file
+func (ma *Application) Load(fileName string) *Application {
 
 	var err error
 
-	app := &AppDefinition{}
-	switch fileType {
-	case "json":
-		err = utils.LoadDataFromJson(app, fileName)
-	case "yaml":
-		err = utils.LoadDataFromYaml(app, fileName)
+	ma.clear()
+
+	switch filepath.Ext(strings.TrimSpace(fileName)) {
+	case ".json":
+		err = utilities.LoadDataFromJSON(&ma.app.App, fileName)
+	case ".yaml":
+		err = utilities.LoadDataFromYAML(&ma.app.App, fileName)
+	default:
+		err = fmt.Errorf("invalid filename extension")
 	}
 
-	_, err = ma.Create(*app)
-
-	return err
+	if err != nil {
+		ma.clear()
+	}
+	return ma
 }
 
-// DumpToFile allows to create a .json file with the configuration of a Marathon application
-func (ma *Application) DumpToFile(fileName, fileType string) error {
+// Dump allows to create a .json file with the configuration of a Marathon application
+func (ma *Application) Dump(fileName string) (err error) {
 
-	var err error
+	if len(ma.app.App.ID) > 0 {
 
-	switch fileType {
-	case "json":
-		err = utils.WriteDataToJson(ma.app.App, fileName)
-	case "yaml":
-		err = utils.WriteDataToYaml(ma.app.App, fileName)
+		switch filepath.Ext(strings.TrimSpace(fileName)) {
+		case ".json":
+			err = utilities.WriteDataToJSON(ma.app.App, fileName)
+		case ".yaml":
+			err = utilities.WriteDataToYAML(ma.app.App, fileName)
+		default:
+			err = utilities.WriteDataToJSON(ma.app.App, fileName)
+		}
+
+		return
 	}
-
-	return err
+	return errors.New("app cannot be null nor empty")
 }
 
 // applyChanges internal func, allows send all changes of a Marathon application to Marathon server
 func (ma *Application) applyChanges(force bool) error {
 
-	if ma.app != nil {
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
+	if len(ma.app.App.ID) > 0 {
 
+		path := fmt.Sprintf("%s%s", marathonAPIApps, utilities.DelInitialSlash(ma.app.App.ID))
+
+		Logger.Debug("Application: applyChanges(%v)[%+v] %s", force, ma.app, path)
 		if force {
 			ma.marathon.Session.AddQueryParam("force", "true")
 		}
-		if _, err := ma.marathon.Session.BodyAsJSON(ma.app.App).Patch(path, ma.deploy, ma.fail); err != nil {
+
+		if _, err := ma.marathon.Session.BodyAsJSON(ma.app.App).Put(path, ma.deploy, ma.fail); err != nil {
+			Logger.Debug("Application: applyChanges StatusCode: %d [Deploy Id: %s => date: %v {%+v}{%+v}]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version, ma.fail, err)
 			return err
 		}
 		// TODO: Deployment wait for ma.timeout
-		fmt.Printf("Deploy Id: %s => date: %v\n", ma.deploy.ID, ma.deploy.Version)
+		Logger.Debug("Application: applyChanges StatusCode: %d [Deploy Id: %s => date: %v]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version)
+
 		return nil
 	}
 	return errors.New("app cannot be null nor empty")
+}
+
+// clear set internal data to his defaults
+func (ma *Application) clear() {
+
+	ma.app = nil
+	ma.app = &App{}
 }

@@ -1,17 +1,20 @@
 package marathon
 
 import (
-	"errors"
 	"fmt"
+	"github.com/dotWicho/logger"
 	"github.com/dotWicho/requist"
 	"net/url"
 	"time"
 )
 
-// Marathon application interface
+// Logger default
+var Logger *logger.StandardLogger = logger.NewLogger(true)
+
+// client Marathon application interface
 type client interface {
 	New(base *url.URL) *Client
-	Connect(baseUrl string)
+	Connect(baseURL string)
 	StatusCode() int
 	CheckConnection() error
 	SetTimeout(timeout time.Duration)
@@ -24,7 +27,7 @@ type client interface {
 	MarathonZookeeper() string
 }
 
-// Marathon application implementation
+// Client is implementation of Marathon application interface
 type Client struct {
 	Session *requist.Requist
 	timeout time.Duration
@@ -37,31 +40,35 @@ type Client struct {
 
 	//
 	auth    string
-	baseUrl string
+	baseURL string
 }
 
-// NewClient returns a new Client given a Marathon server base url
+// New returns a new Client given a Marathon server base url
 func New(base string) *Client {
 
+	Logger.Debug("Creating Marathon Client with baseURL = %s", base)
 	baseURL, err := url.Parse(base)
 	if err != nil {
-		panic(err)
+		Logger.Debug("Invalid baseURL")
+		return nil
 	}
 
-	client := &Client{}
-	return client.New(baseURL)
+	_client := &Client{}
+	return _client.New(baseURL)
 }
 
 // NewFromURL returns a new Client given a Marathon server base url in URL type
 func NewFromURL(base *url.URL) *Client {
 
+	Logger.Debug("Creating Marathon Client from url.URL = %s", base.String())
 	baseURL, err := url.Parse(base.String())
 	if err != nil {
-		panic(err)
+		Logger.Debug("Invalid baseURL")
+		return nil
 	}
 
-	client := &Client{}
-	return client.New(baseURL)
+	_client := &Client{}
+	return _client.New(baseURL)
 }
 
 //=== Marathon utilities definitions ===
@@ -69,31 +76,36 @@ func NewFromURL(base *url.URL) *Client {
 // New returns a Client populated struct
 func (mc *Client) New(base *url.URL) *Client {
 
-	marathon := &Client{}
+	marathon := mc
 	marathon.Session = requist.New(base.String())
-	marathon.baseUrl = base.String()
-	marathon.info = &Info{}
-	marathon.fail = &FailureMessage{}
 
-	if base.User.String() != "" {
-		if pass, check := base.User.Password(); check {
-			marathon.Session.SetBasicAuth(base.User.Username(), pass)
+	if marathon.Session != nil {
+		requist.Logger = Logger
+		marathon.baseURL = base.String()
+		marathon.info = &Info{}
+		marathon.fail = &FailureMessage{}
+
+		if base.User.String() != "" {
+			if pass, check := base.User.Password(); check {
+				marathon.Session.SetBasicAuth(base.User.Username(), pass)
+			}
+			marathon.auth = marathon.Session.GetBasicAuth()
 		}
-		marathon.auth = marathon.Session.GetBasicAuth()
-	}
-	marathon.SetTimeout(defaultDeploymentTimeout)
-	marathon.Session.Accept("application/json")
-	marathon.Session.SetHeader("Cache-Control", "no-cache")
-	marathon.Session.SetHeader("Accept-Encoding", "identity")
+		marathon.SetTimeout(defaultDeploymentTimeout)
+		marathon.Session.Accept("application/json")
+		marathon.Session.SetHeader("Cache-Control", "no-cache")
+		marathon.Session.SetHeader("Accept-Encoding", "identity")
 
-	return marathon
+		Logger.Debug("Marathon Client = %+v", marathon)
+		return marathon
+	}
+	return nil
 }
 
-// Connect sets baseUrl and prepares the Client with this
-func (mc *Client) Connect(baseUrl string) {
+// Connect sets baseURL and prepares the Client with this
+func (mc *Client) Connect(baseURL string) {
 	mc.Session = nil
-	nc := mc.Session.New(baseUrl)
-	mc.Session = nc
+	mc.Session = requist.New(baseURL)
 }
 
 // StatusCode returns last responseCode
@@ -104,18 +116,21 @@ func (mc *Client) StatusCode() int {
 // CheckConnection send a request to check Marathon server connectivity
 func (mc *Client) CheckConnection() error {
 
-	if _, err := mc.Session.Get(marathonApiPing, nil, nil); err != nil {
-		return errors.New(fmt.Sprintf("unable to connect to Marathon server %s.\n", mc.baseUrl))
+	if _, err := mc.Session.Get(marathonAPIPing, nil, nil); err != nil {
+		Logger.Debug("CheckConnection unable to connect to Marathon server")
+		return fmt.Errorf("unable to connect to Marathon server %s", mc.baseURL)
 	}
 	if mc.StatusCode() == 200 {
-		if _, err := mc.Session.Get(marathonApiInfo, mc.info, mc.fail); err != nil {
-			return errors.New(fmt.Sprintf("unable to get info from Marathon server %s.\n", mc.baseUrl))
+		Logger.Debug("CheckConnection successful")
+		if _, err := mc.Session.Get(marathonAPIInfo, mc.info, mc.fail); err != nil {
+			return fmt.Errorf("unable to get info from Marathon server %s", mc.baseURL)
 		}
+		Logger.Debug("CheckConnection: Marathon version = %s", mc.info.Version)
 	}
 	return nil
 }
 
-// SetBasicAuth used if we need to set login parameters
+// SetTimeout used if we need to set login parameters
 func (mc *Client) SetTimeout(timeout time.Duration) {
 
 	mc.timeout = timeout
@@ -126,6 +141,7 @@ func (mc *Client) SetTimeout(timeout time.Duration) {
 func (mc *Client) SetBasicAuth(username, password string) {
 
 	mc.Session.SetBasicAuth(username, password)
+	mc.auth = mc.Session.GetBasicAuth()
 }
 
 //=== Marathon Info interface definitions ===
