@@ -2,23 +2,33 @@ name: Go
 on: [push, pull_request]
 
 jobs:
-  build:
+  ci:
+    name: Go ${{ matrix.goVer }} on ${{ matrix.platform }}
     strategy:
+      fail-fast: false
       matrix:
         goVer: [1.13.x, 1.14.x]
-        platform: [ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
 
     steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
       - name: Set up Go ${{ matrix.goVer }}
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.goVer }}
         id: go
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+      - name: Cache on Go ${{ matrix.goVer }}
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
       - name: Get dependencies
         run: |
@@ -33,3 +43,4 @@ jobs:
 
       - name: Test
         run: go test -v .
+
