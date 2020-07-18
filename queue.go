@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Array of
+// Queues Array of
 type Queues struct {
 	Queue []QueueType `json:"queue"`
 }
@@ -44,7 +44,7 @@ type Delay struct {
 	Overdue         bool `json:"overdue"`
 }
 
-// Processed Offers Summary info
+// ProcessedOffersSummary is Processed Offers Summary info
 type ProcessedOffersSummary struct {
 	ProcessedOffersCount int `json:"processedOffersCount"`
 	UnusedOffersCount    int `json:"unusedOffersCount"`
@@ -66,7 +66,7 @@ type Offer struct {
 	Attributes []Attribute `json:"attributes"`
 }
 
-// Offer resource representation
+// Resource is Offer resource representation
 type Resource struct {
 	Name   string   `json:"name"`
 	Scalar int      `json:"scalar"`
@@ -83,7 +83,7 @@ type Attribute struct {
 	Set    []string `json:"set"`
 }
 
-// Range, scalar of an Offer from Mesos
+// Range scalar of an Offer from Mesos
 type Range struct {
 	Begin int `json:"begin"`
 	End   int `json:"end"`

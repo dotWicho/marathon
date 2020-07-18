@@ -1,6 +1,6 @@
 package marathon
 
-// Array of
+// Plugins Array of
 type Plugins struct {
 	Plugins []Plugin `json:"plugins"`
 }
@@ -14,7 +14,7 @@ type Plugin struct {
 	Tags           []string   `json:"tags"`
 }
 
-// Plguing version Info
+// PluginInfo version Info
 type PluginInfo struct {
 	Version string `json:"version"`
 	Array   []int  `json:"array"`

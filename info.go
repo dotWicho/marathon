@@ -2,7 +2,7 @@ package marathon
 
 //=== Marathon Server Info definitions
 
-// Marathon server info vía API endpoint /v2/info
+// Info is the Marathon server info get vía API endpoint /v2/info
 type Info struct {
 	Name            string     `json:"name"`
 	Version         string     `json:"version"`
@@ -15,7 +15,7 @@ type Info struct {
 	HTTPConf        HTTPConfig `json:"http_config"`
 }
 
-// Marathon Server Config definitions
+// Config is Marathon Server Config definitions
 type Config struct {
 	AccessControlAllowOrigin       []string      `json:"access_control_allow_origin"`
 	Checkpoint                     bool          `json:"checkpoint"`
@@ -60,6 +60,7 @@ type Config struct {
 	WebuiURL                       string        `json:"webui_url"`
 }
 
+// ZkConfig is ZooKeeper's Marathon Config
 type ZkConfig struct {
 	Zk                     string `json:"zk"`
 	ZkCompression          bool   `json:"zk_compression"`
@@ -71,6 +72,7 @@ type ZkConfig struct {
 	ZkTimeout              int    `json:"zk_timeout"`
 }
 
+// HTTPConfig is the HTTP/S port of a Marathon server
 type HTTPConfig struct {
 	Port       int `json:"http_port"`
 	SecurePort int `json:"https_port"`
