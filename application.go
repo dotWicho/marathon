@@ -61,7 +61,7 @@ type application interface {
 	Load(fileName string) *Application
 	Dump(fileName string) error
 
-	applyChanges(force bool) error
+	Apply(force bool) error
 }
 
 // Application is a Marathon Application implementation
@@ -200,7 +200,7 @@ func (ma *Application) Create(app AppDefinition) *Application {
 		Logger.Debug("Application: Create id = [%s] body = %+v", app.ID, app)
 
 		ma.app.App = app
-		_ = ma.applyChanges(true)
+		_ = ma.Apply(true)
 	}
 	return ma
 }
@@ -230,7 +230,7 @@ func (ma *Application) Update(app AppDefinition) error {
 		Logger.Debug("Application: Update id = [%s] body = %+v", app.ID, app)
 
 		ma.app.App = app
-		return ma.applyChanges(true)
+		return ma.Apply(true)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -251,7 +251,7 @@ func (ma *Application) Scale(instances int, force bool) error {
 		Logger.Debug("Application: Scale %s to %d force=%v", ma.app.App.ID, instances, force)
 		ma.app.App.Instances = instances
 
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -316,7 +316,7 @@ func (ma *Application) SetTag(tag string, force bool) error {
 
 		ma.app.App.Container.Docker.Image = fmt.Sprintf("%s%s/%s:%s", elements[1], elements[4], elements[6], tag)
 
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -337,7 +337,7 @@ func (ma *Application) SetEnv(name, value string, force bool) error {
 	if len(ma.app.App.ID) > 0 {
 
 		ma.app.App.Env[name] = value
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -348,7 +348,7 @@ func (ma *Application) DelEnv(name string, force bool) error {
 	if len(ma.app.App.ID) > 0 {
 
 		delete(ma.app.App.Env, name)
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -369,7 +369,7 @@ func (ma *Application) SetCpus(to float64, force bool) error {
 	if len(ma.app.App.ID) > 0 {
 
 		ma.app.App.Cpus = to
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -390,7 +390,7 @@ func (ma *Application) SetMemory(to float64, force bool) error {
 	if len(ma.app.App.ID) > 0 {
 
 		ma.app.App.Mem = to
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -411,7 +411,7 @@ func (ma *Application) SetRole(to string, force bool) error {
 	if len(ma.app.App.ID) > 0 {
 
 		ma.app.App.Role = to
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -442,7 +442,7 @@ func (ma *Application) SetContainer(to *Container, force bool) error {
 			Volumes:      to.Volumes,
 			PortMappings: to.PortMappings,
 		}
-		return ma.applyChanges(force)
+		return ma.Apply(force)
 	}
 	return errors.New("app cannot be null nor empty")
 }
@@ -494,7 +494,7 @@ func (ma *Application) AddParameter(key, value string, force bool) error {
 				Key:   key,
 				Value: value,
 			})
-			return ma.applyChanges(force)
+			return ma.Apply(force)
 		}
 	}
 	return errors.New("app cannot be null nor empty")
@@ -523,7 +523,7 @@ func (ma *Application) DelParameter(key string, force bool) error {
 			}
 			ma.app.App.Container.Docker.Parameters = ma.app.App.Container.Docker.Parameters[:length-1]
 
-			return ma.applyChanges(force)
+			return ma.Apply(force)
 		}
 		return fmt.Errorf("parameters %s dont exist in Marathon app %s", key, ma.app.App.ID)
 	}
@@ -571,24 +571,24 @@ func (ma *Application) Dump(fileName string) (err error) {
 	return errors.New("app cannot be null nor empty")
 }
 
-// applyChanges internal func, allows send all changes of a Marathon application to Marathon server
-func (ma *Application) applyChanges(force bool) error {
+// Apply internal func, allows send all changes of a Marathon application to Marathon server
+func (ma *Application) Apply(force bool) error {
 
 	if len(ma.app.App.ID) > 0 {
 
 		path := fmt.Sprintf("%s%s", marathonAPIApps, utilities.DelInitialSlash(ma.app.App.ID))
 
-		Logger.Debug("Application: applyChanges(%v)[%+v] %s", force, ma.app, path)
+		Logger.Debug("Application: Apply(%v)[%+v] %s", force, ma.app, path)
 		if force {
 			ma.marathon.Session.AddQueryParam("force", "true")
 		}
 
 		if _, err := ma.marathon.Session.BodyAsJSON(ma.app.App).Put(path, ma.deploy, ma.fail); err != nil {
-			Logger.Debug("Application: applyChanges StatusCode: %d [Deploy Id: %s => date: %v {%+v}{%+v}]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version, ma.fail, err)
+			Logger.Debug("Application: Apply StatusCode: %d [Deploy Id: %s => date: %v {%+v}{%+v}]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version, ma.fail, err)
 			return err
 		}
 		// TODO: Deployment wait for ma.timeout
-		Logger.Debug("Application: applyChanges StatusCode: %d [Deploy Id: %s => date: %v]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version)
+		Logger.Debug("Application: Apply StatusCode: %d [Deploy Id: %s => date: %v]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version)
 
 		return nil
 	}

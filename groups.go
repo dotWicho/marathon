@@ -242,7 +242,7 @@ func (mg *Groups) Apply(force bool) error {
 
 			callbackFunc := func(app AppDefinition) error {
 
-				if err := appClient.Set(app).applyChanges(force); err != nil {
+				if err := appClient.Set(app).Apply(force); err != nil {
 					return err
 				}
 				return nil
