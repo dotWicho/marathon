@@ -48,7 +48,7 @@ func New(base string) *Client {
 
 	Logger.Debug("Creating Marathon Client with baseURL = %s", base)
 	baseURL, err := url.Parse(base)
-	if err != nil {
+	if len(base) == 0 || err != nil {
 		Logger.Debug("Invalid baseURL")
 		return nil
 	}
@@ -60,15 +60,19 @@ func New(base string) *Client {
 // NewFromURL returns a new Client given a Marathon server base url in URL type
 func NewFromURL(base *url.URL) *Client {
 
-	Logger.Debug("Creating Marathon Client from url.URL = %s", base.String())
-	baseURL, err := url.Parse(base.String())
-	if err != nil {
-		Logger.Debug("Invalid baseURL")
-		return nil
-	}
+	if baseStr := base.String(); len(baseStr) > 0 {
 
-	_client := &Client{}
-	return _client.New(baseURL)
+		Logger.Debug("Creating Marathon Client from url.URL = %s", base.String())
+		baseURL, err := url.Parse(baseStr)
+		if err != nil {
+			Logger.Debug("Invalid baseURL")
+			return nil
+		}
+
+		_client := &Client{}
+		return _client.New(baseURL)
+	}
+	return nil
 }
 
 //=== Marathon utilities definitions ===
