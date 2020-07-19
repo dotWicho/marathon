@@ -26,7 +26,7 @@ type AppSummary struct {
 	Image  string            `json:"image,omitempty"`
 }
 
-// Marathon Application interface
+// filteredApps Marathon Application FilteredApps interface
 type filteredApps interface {
 	Get(filter string) *FilteredApps
 	Scale(instances int, force bool) error
@@ -35,16 +35,17 @@ type filteredApps interface {
 	Restart(force bool) error
 	Suspend(force bool) error
 
-	Load(fileName string) *FilteredApps
+	Load(fileName, filter string) *FilteredApps
 	Dump(fileName string) (err error)
+	DumpSingly(baseName string) (err error)
 
-	FilterBy() error
+	FilterBy(filterFunc FilterFunction) *FilteredApps
 
 	AsMap() map[string]AppSummary
 	AsRaw() []AppDefinition
 }
 
-// FilteredApps is a Marathon FilteredApps implementation
+// FilteredApps is a Marathon Applications by filter implementation
 type FilteredApps struct {
 	marathon *Client
 	timeout  time.Duration
@@ -222,6 +223,34 @@ func (fa *FilteredApps) Dump(fileName string) (err error) {
 		switch filepath.Ext(strings.TrimSpace(fileName)) {
 		case ".json":
 			err = utilities.WriteDataToJSON(fa.apps.Apps, fileName)
+		default:
+			err = fmt.Errorf("invalid filename extension")
+		}
+
+		return
+	}
+	return fmt.Errorf("filteredApps Dump was called with an empty set")
+}
+
+// Dump allows to create a file with the configuration of filteredApps
+func (fa *FilteredApps) DumpSingly(baseName string) (err error) {
+
+	if fa.apps != nil && len(fa.apps.Apps) > 0 {
+
+		switch filepath.Ext(strings.TrimSpace(baseName)) {
+		case ".json":
+
+			baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+
+			for _, app := range fa.apps.Apps {
+
+				appFileName := baseName + utilities.BaseName(app.ID) + ".json"
+				err = utilities.WriteDataToJSON(app, appFileName)
+				if err != nil {
+					Logger.Error("Writing app %s [%+v]", app.ID, err)
+				}
+			}
+
 		default:
 			err = fmt.Errorf("invalid filename extension")
 		}
