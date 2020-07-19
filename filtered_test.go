@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -331,7 +332,7 @@ func TestFilteredApps_Dump(t *testing.T) {
 		assert.Equal(t, "filteredApps Dump was called with an empty set", err.Error())
 	})
 
-	t.Run("dump App content is called with a valid filter", func(t *testing.T) {
+	t.Run("dump App content when Dump is called with a valid filter", func(t *testing.T) {
 
 		// We define some vars
 		filter := "/infra"
@@ -354,6 +355,77 @@ func TestFilteredApps_Dump(t *testing.T) {
 
 		// Read content of file
 		file, _ := ioutil.ReadFile(fileName)
+
+		// Check some values on response
+		assert.Equal(t, appsRef, file)
+	})
+}
+
+func TestFilteredApps_DumpSingly(t *testing.T) {
+
+	// We create a Mock Server
+	server := MockMarathonServer()
+	defer server.Close()
+
+	t.Run("get nil when DumpSingly is called with empty filter", func(t *testing.T) {
+
+		// We define some vars
+		baseName := "dumpfile.json"
+
+		// Try to create FilteredApp
+		_apps := NewFilteredApps(New(server.URL))
+
+		// try to Get with empty app id
+		err := _apps.DumpSingly(baseName)
+		defer os.Remove(baseName + "*")
+
+		// We get an error
+		assert.NotNil(t, err)
+		assert.Equal(t, "filteredApps Dump was called with an empty set", err.Error())
+	})
+
+	t.Run("get err when DumpSingly is called with invalid baseName", func(t *testing.T) {
+
+		// We define some vars
+		filter := "/infra"
+		baseName := "dumpfile"
+
+		// Try to create FilteredApp
+		_apps := NewFilteredApps(New(server.URL))
+
+		// try to Get with empty app id
+		err := _apps.Get(filter).DumpSingly(baseName)
+
+		// Error must be "invalid filename extension"
+		assert.NotNil(t, err)
+		assert.Equal(t, "invalid filename extension", err.Error())
+	})
+
+	t.Run("dump App content when DumpSingly is called with a valid filter", func(t *testing.T) {
+
+		// We define some vars
+		filter := "/infra"
+		baseName := "dumpfile.json"
+		appsFiltered := &apps{}
+		_ = json.Unmarshal([]byte(appsArray), appsFiltered)
+
+		// We need create a []byte with appsFiltered.Apps because Dump writes that
+		appsRef, _ := json.MarshalIndent(appsFiltered.Apps[0], "", "  ")
+
+		// Try to create FilteredApp
+		_apps := NewFilteredApps(New(server.URL))
+
+		// try to Get with empty app id
+		err := _apps.Get(filter).DumpSingly(baseName)
+		baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+
+		defer os.Remove(baseName + "*")
+
+		// We get not error
+		assert.Nil(t, err)
+
+		// Read content of file
+		file, _ := ioutil.ReadFile(baseName + "-infra-redis-1.json")
 
 		// Check some values on response
 		assert.Equal(t, appsRef, file)

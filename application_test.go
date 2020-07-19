@@ -435,7 +435,44 @@ func TestApplication_Restart(t *testing.T) {
 
 func TestApplication_Suspend(t *testing.T) {
 
-	TestApplication_Stop(t)
+	// We create a Mock Server
+	server := MockMarathonServer()
+	defer server.Close()
+
+	t.Run("get error when Suspend is called with app empty", func(t *testing.T) {
+
+		// Try to create Application
+		_app := NewApplication(New(server.URL))
+
+		// try to Get with empty app id
+		err := _app.Suspend(true)
+
+		// Error must be "app cannot be null nor empty"
+		assert.NotNil(t, err)
+		assert.Equal(t, "app cannot be null nor empty", err.Error())
+
+		// Application ref must be empty
+		assert.Empty(t, _app.app.App)
+	})
+
+	t.Run("get not error when Suspend is called with a valid app", func(t *testing.T) {
+
+		// we define some vars
+		redisApp := &App{}
+		_ = json.Unmarshal([]byte(appRedis), redisApp)
+
+		// Try to create Application
+		_app := NewApplication(New(server.URL))
+
+		// try to Get with empty app id
+		err := _app.Get(redisApp.App.ID).Suspend(true)
+
+		// We get not error
+		assert.Nil(t, err)
+
+		// Check some values on response
+		assert.Equal(t, 0, _app.Instances())
+	})
 }
 
 func TestApplication_GetTag(t *testing.T) {
@@ -1077,20 +1114,20 @@ func TestApplication_DelParameter(t *testing.T) {
 	server := MockMarathonServer()
 	defer server.Close()
 
-	t.Run("get nil when DelEnv is called with app empty", func(t *testing.T) {
+	t.Run("get nil when DelParameter is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
 		_app := NewApplication(New(server.URL))
 
 		// try to Get with empty app id
-		err := _app.DelEnv("REDISPORT", true)
+		err := _app.DelParameter("add-host", true)
 
 		// Error must be "app cannot be null nor empty"
 		assert.NotNil(t, err)
 		assert.Equal(t, "app cannot be null nor empty", err.Error())
 	})
 
-	t.Run("del Env is called with a valid app", func(t *testing.T) {
+	t.Run("get error when DelParameter is called with an invalid Parameter", func(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
@@ -1100,16 +1137,27 @@ func TestApplication_DelParameter(t *testing.T) {
 		_app := NewApplication(New(server.URL))
 
 		// try to Get with empty app id
-		_ = _app.Get(redisApp.App.ID).SetEnv("TESTED", "YES", true)
-		err := _app.DelEnv("TESTED", true)
+		err := _app.Get(redisApp.App.ID).DelParameter("add-folder", true)
 
-		// We get not error
+		// Error must be "parameters add-folder dont exist in Marathon app /infra/redis-1"
+		assert.NotNil(t, err)
+		assert.Equal(t, "parameters add-folder dont exist in Marathon app /infra/redis-1", err.Error())
+	})
+
+	t.Run("get not error when DelParameter is called with a valid Parameter", func(t *testing.T) {
+
+		// we define some vars
+		redisApp := &App{}
+		_ = json.Unmarshal([]byte(appRedis), redisApp)
+
+		// Try to create Application
+		_app := NewApplication(New(server.URL))
+
+		// try to Get with empty app id
+		err := _app.Get(redisApp.App.ID).DelParameter("add-host", true)
+
+		// Error must be nil
 		assert.Nil(t, err)
-
-		_env := _app.Env()
-
-		// Check some values on response
-		assert.Equal(t, "", _env["TESTED"])
 	})
 }
 

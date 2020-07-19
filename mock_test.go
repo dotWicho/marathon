@@ -766,7 +766,7 @@ func MockMarathonServer() *httptest.Server {
 				// Define a "break condition" for test eventually finish of a deployment
 				times++
 
-				if times > 66 {
+				if times > 12 {
 					deployArray = `[]`
 				}
 

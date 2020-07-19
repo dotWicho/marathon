@@ -125,6 +125,7 @@ func TestDeployments_Await(t *testing.T) {
 	defer server.Close()
 
 	//
+	var timeout time.Duration = 5 * time.Second
 	deployArray = someDeployments
 
 	t.Run("returns nil when Deploy don't found", func(t *testing.T) {
@@ -136,7 +137,7 @@ func TestDeployments_Await(t *testing.T) {
 		id := "97c136bf-5a28-4821-9d94-480d9fbb01cX"
 
 		// Fire up Await of deploy
-		err := _deploy.Await(id, 60*time.Second)
+		err := _deploy.Await(id, timeout)
 
 		// err must be nil
 		assert.Nil(t, err)
@@ -151,7 +152,7 @@ func TestDeployments_Await(t *testing.T) {
 		id := "97c136bf-5a28-4821-9d94-480d9fbb01c8"
 
 		// Fire up Await of deploy
-		err := _deploy.Await(id, 60*time.Second)
+		err := _deploy.Await(id, timeout)
 
 		// We get error if deploy still exist after timeout
 		assert.NotNil(t, err)
@@ -167,7 +168,7 @@ func TestDeployments_Await(t *testing.T) {
 		id := "97c136bf-5a28-4821-9d94-480d9fbb01c8"
 
 		// Fire up Await of deploy
-		err := _deploy.Await(id, 60*time.Second)
+		err := _deploy.Await(id, timeout)
 
 		// err must be nil
 		assert.Nil(t, err)
