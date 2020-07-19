@@ -154,9 +154,7 @@ func (mg *Groups) Scale(instances int, force bool) error {
 
 			callbackFunc := func(appID string) error {
 
-				if err := appClient.Get(appID).Scale(instances, force); err == nil {
-					Logger.Debug("appClient.Scale(%d, %v), [%+v]", instances, force, appClient.app)
-
+				if err := appClient.Get(appID).Scale(instances, force); err != nil {
 					return err
 				}
 				return nil
@@ -264,8 +262,6 @@ func (mg *Groups) Load(fileName string) *Groups {
 	switch filepath.Ext(strings.TrimSpace(fileName)) {
 	case ".json":
 		err = utilities.LoadDataFromJSON(mg.group, fileName)
-	case ".yaml":
-		err = utilities.LoadDataFromYAML(mg.group, fileName)
 	default:
 		err = fmt.Errorf("invalid filename extension")
 	}
@@ -284,8 +280,6 @@ func (mg *Groups) Dump(fileName string) (err error) {
 		switch filepath.Ext(strings.TrimSpace(fileName)) {
 		case ".json":
 			err = utilities.WriteDataToJSON(mg.group, fileName)
-		case ".yaml":
-			err = utilities.WriteDataToYAML(mg.group, fileName)
 		default:
 			err = fmt.Errorf("invalid filename extension")
 		}
