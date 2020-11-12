@@ -39,13 +39,13 @@ module myclient
 go 1.13
 
 require (
-	github.com/dotWicho/marathon v1.4.2
+	github.com/dotWicho/marathon v1.4.3
 )
 ```
 
 ## Contributing
 
 - Get started by checking our [contribution guidelines](https://github.com/dotWicho/marathon/blob/master/CONTRIBUTING.md).
-- Read the [dotWicho requist wiki](https://github.com/dotWicho/marathon/wiki) for more technical and design details.
+- Read the [dotWicho marathon wiki](https://github.com/dotWicho/marathon/wiki) for more technical and design details.
 - If you have any questions, just ask!
 

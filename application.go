@@ -90,6 +90,7 @@ type AppDefinition struct {
 	BackoffFactor         float64             `json:"backoffFactor,omitempty"`
 	BackoffSeconds        int                 `json:"backoffSeconds,omitempty"`
 	Container             Container           `json:"container"`
+	Constraints           []TaskConstraints   `json:"constraints,omitempty"`
 	Cpus                  float64             `json:"cpus"`
 	Disk                  float64             `json:"disk,omitempty"`
 	Env                   map[string]string   `json:"env,omitempty"`
@@ -108,6 +109,9 @@ type AppDefinition struct {
 	UnreachableStrategy   UnreachableStrategy `json:"unreachableStrategy,omitempty"`
 	Role                  string              `json:"role,omitempty"`
 }
+
+// TaskConstraints is a simple array of strings
+type TaskConstraints []string
 
 // Fetch reflects the data used by the sub-element fetch on a Marathon App
 type Fetch struct {
