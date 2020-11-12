@@ -599,6 +599,15 @@ func (ma *Application) Apply(force bool) error {
 	return errors.New("app cannot be null nor empty")
 }
 
+// AsRaw returns AppDefinition content of current Application
+func (ma *Application) AsRaw() AppDefinition {
+
+	if len(ma.app.App.ID) > 0 {
+		return ma.app.App
+	}
+	return AppDefinition{}
+}
+
 // clear set internal data to his defaults
 func (ma *Application) clear() {
 
