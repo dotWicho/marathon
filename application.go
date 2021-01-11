@@ -3,8 +3,8 @@ package marathon
 import (
 	"errors"
 	"fmt"
-	"github.com/dotWicho/marathon/pkg/utils"
 	"github.com/dotWicho/requist"
+	"github.com/dotWicho/utilities"
 	"regexp"
 	"time"
 )
@@ -177,7 +177,7 @@ func (ma *Application) SetClient(client *requist.Requist) {
 func (ma *Application) Get(id string) (*Application, error) {
 
 	if len(id) > 0 {
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathonApiApps, utilities.DelInitialSlash(id))
 
 		if _, err := ma.client.BodyAsJSON(nil).Get(path, ma.app, ma.fail); err != nil {
 			return nil, errors.New(fmt.Sprintf("unable to get add id = %s", id))
@@ -191,7 +191,7 @@ func (ma *Application) Get(id string) (*Application, error) {
 func (ma *Application) Create(app AppDefinition) (*Application, error) {
 
 	if len(app.ID) > 0 {
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(app.ID))
+		path := fmt.Sprintf("%s%s", marathonApiApps, utilities.DelInitialSlash(app.ID))
 
 		if _, err := ma.client.BodyAsJSON(app).Put(path, ma.deploy, ma.fail); err != nil {
 			return nil, err
@@ -209,7 +209,7 @@ func (ma *Application) Destroy() error {
 
 	if ma.app != nil {
 
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
+		path := fmt.Sprintf("%s%s", marathonApiApps, utilities.DelInitialSlash(ma.app.App.ID))
 
 		if _, err := ma.client.BodyAsJSON(nil).Delete(path, ma.deploy, ma.fail); err != nil {
 			return err
@@ -255,7 +255,7 @@ func (ma *Application) Start(instances int, force bool) error {
 func (ma *Application) Restart(force bool) error {
 
 	if ma.app != nil {
-		path := fmt.Sprintf("%s%s/restart", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
+		path := fmt.Sprintf("%s%s/restart", marathonApiApps, utilities.DelInitialSlash(ma.app.App.ID))
 
 		if force {
 			ma.client.AddQueryParam("force", "true")
@@ -412,7 +412,7 @@ func (ma *Application) LoadFromFile(fileName string) error {
 	app := &AppDefinition{}
 
 	var err error
-	if err = utils.LoadDataFromJson(app, fileName); err == nil {
+	if err = utilities.LoadDataFromJSON(app, fileName); err == nil {
 		_, err = ma.Create(*app)
 		return err
 	}
@@ -422,7 +422,7 @@ func (ma *Application) LoadFromFile(fileName string) error {
 // DumpToFile allows to create a .json file with the configuration of a Marathon application
 func (ma *Application) DumpToFile(fileName string) error {
 
-	if err := utils.WriteDataToJson(ma.app.App, fileName); err != nil {
+	if err := utilities.WriteDataToJSON(ma.app.App, fileName); err != nil {
 		return err
 	}
 	return nil
@@ -432,7 +432,7 @@ func (ma *Application) DumpToFile(fileName string) error {
 func (ma *Application) applyChanges(force bool) error {
 
 	if ma.app != nil {
-		path := fmt.Sprintf("%s%s", marathonApiApps, utils.DelInitialSlash(ma.app.App.ID))
+		path := fmt.Sprintf("%s%s", marathonApiApps, utilities.DelInitialSlash(ma.app.App.ID))
 
 		if force {
 			ma.client.AddQueryParam("force", "true")
@@ -441,7 +441,7 @@ func (ma *Application) applyChanges(force bool) error {
 			return err
 		}
 		// TODO: Deployment wait for ma.timeout
-		fmt.Printf("Deploy Id: %s => date: %v", ma.deploy.ID, ma.deploy.Version)
+		fmt.Printf("Deploy Id: %s => date: %v\n", ma.deploy.ID, ma.deploy.Version)
 		return nil
 	}
 	return errors.New("app cannot be null nor empty")

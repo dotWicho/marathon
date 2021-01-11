@@ -3,8 +3,8 @@ package marathon
 import (
 	"errors"
 	"fmt"
-	"github.com/dotWicho/marathon/pkg/utils"
 	"github.com/dotWicho/requist"
+	"github.com/dotWicho/utilities"
 	"time"
 )
 
@@ -81,7 +81,7 @@ func (mg *Groups) SetClient(client *requist.Requist) {
 func (mg *Groups) Get(id string) (*Groups, error) {
 
 	if len(id) > 0 {
-		path := fmt.Sprintf("%s%s", marathonApiGroups, utils.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathonApiGroups, utilities.DelInitialSlash(id))
 
 		if _, err := mg.client.BodyAsJSON(nil).Get(path, mg.group, mg.fail); err != nil {
 			return nil, errors.New(fmt.Sprintf("unable to get add id = %s", id))
@@ -106,7 +106,7 @@ func (mg *Groups) Destroy() error {
 
 	if mg.group != nil {
 
-		path := fmt.Sprintf("%s%s", marathonApiGroups, utils.DelInitialSlash(mg.group.ID))
+		path := fmt.Sprintf("%s%s", marathonApiGroups, utilities.DelInitialSlash(mg.group.ID))
 
 		if _, err := mg.client.BodyAsJSON(nil).Delete(path, mg.deploy, mg.fail); err != nil {
 			return err

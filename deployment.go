@@ -3,8 +3,8 @@ package marathon
 import (
 	"errors"
 	"fmt"
-	"github.com/dotWicho/marathon/pkg/utils"
 	"github.com/dotWicho/requist"
+	"github.com/dotWicho/utilities"
 	"time"
 )
 
@@ -113,7 +113,7 @@ func (md *Deployments) Rollback(id string) error {
 
 	if md.deployments != nil {
 
-		path := fmt.Sprintf("%s%s", marathonApiDeployments, utils.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathonApiDeployments, utilities.DelInitialSlash(id))
 
 		if _, err := md.client.BodyAsJSON(nil).Delete(path, md.deploy, md.fail); err != nil {
 			return err
