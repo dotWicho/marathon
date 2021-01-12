@@ -1,4 +1,4 @@
-package marathon
+package data
 
 //=== Marathon Server Info definitions
 

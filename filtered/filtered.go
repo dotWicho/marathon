@@ -1,19 +1,21 @@
-package marathon
+package filtered
 
 import (
 	"fmt"
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/application"
+	"github.com/dotWicho/marathon/data"
 	"github.com/dotWicho/utilities"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 // FilterFunction is a type to create callback functions
-type FilterFunction func(app AppDefinition) bool
+type FilterFunction func(app application.AppDefinition) bool
 
 // Apps wraps an AppDefinition array returned by the Marathon API
 type apps struct {
-	Apps []AppDefinition `json:"apps"`
+	Apps []application.AppDefinition `json:"apps"`
 }
 
 // AppSummary holds a resumed format of Application
@@ -28,89 +30,81 @@ type AppSummary struct {
 
 // filteredApps Marathon Application FilteredApps interface
 type filteredApps interface {
-	Get(filter string) *FilteredApps
+	Get(filter string) *Apps
 	Scale(instances int, force bool) error
 	Stop(force bool) error
 	Start(instances int, force bool) error
 	Restart(force bool) error
 	Suspend(force bool) error
 
-	Load(fileName, filter string) *FilteredApps
+	Load(fileName, filter string) *Apps
 	Dump(fileName string) (err error)
 	DumpSingly(baseName string) (err error)
 
-	FilterBy(filterFunc FilterFunction) *FilteredApps
+	FilterBy(filterFunc FilterFunction) *Apps
 
 	AsMap() map[string]AppSummary
-	AsRaw() []AppDefinition
+	AsRaw() []application.AppDefinition
 }
 
 // FilteredApps is a Marathon Applications by filter implementation
-type FilteredApps struct {
-	marathon *Client
-	timeout  time.Duration
+type Apps struct {
+	client  *marathon.Client
 	//
 	apps *apps
 
 	//
-	baseURL string
-	auth    string
-
-	//
-	deploy *Response
-	fail   *FailureMessage
+	deploy *data.Response
+	fail   *data.FailureMessage
 }
 
 // NewFilteredApps returns a new instance of Marathon filteredApps implementation
-func NewFilteredApps(marathon *Client) *FilteredApps {
+func NewFilteredApps(client *marathon.Client) *Apps {
 
-	if marathon != nil {
-		return &FilteredApps{
-			marathon: marathon,
-			timeout:  marathon.timeout,
-			apps:     &apps{},
-			baseURL:  marathon.baseURL,
-			auth:     marathon.auth,
-			deploy:   &Response{},
-			fail:     &FailureMessage{},
+	if client != nil {
+		return &Apps{
+			client: client,
+			apps:   &apps{},
+			deploy: &data.Response{},
+			fail:   &data.FailureMessage{},
 		}
 	}
 	return nil
 }
 
 // Get allows to establish the internal structures to referenced id
-func (fa *FilteredApps) Get(filter string) *FilteredApps {
+func (fa *Apps) Get(filter string) *Apps {
 
 	if len(filter) > 0 {
 
-		Logger.Debug("FilteredApps: Get (%s)", filter)
+		marathon.Logger.Debug("FilteredApps: Get (%s)", filter)
 		_apps := &apps{}
 
-		if _, err := fa.marathon.Session.BodyAsJSON(nil).Get(marathonAPIApps, _apps, fa.fail); err != nil {
+		if _, err := fa.client.Session.BodyAsJSON(nil).Get(marathon.APIApps, _apps, fa.fail); err != nil {
 			fa.apps.Apps = nil
 			return fa
 		}
 
 		for _, app := range _apps.Apps {
 			if strings.HasPrefix(app.ID, filter) {
-				Logger.Debug("FilteredApps: Get %s match", app.ID)
+				marathon.Logger.Debug("FilteredApps: Get %s match", app.ID)
 				fa.apps.Apps = append(fa.apps.Apps, app)
 			}
 		}
 
-		Logger.Debug("FilteredApps: Get (%s) found %d apps", filter, len(fa.apps.Apps))
+		marathon.Logger.Debug("FilteredApps: Get (%s) found %d apps", filter, len(fa.apps.Apps))
 	}
 	return fa
 }
 
 // Scale allows change instances numbers of a Marathon filteredApps
-func (fa *FilteredApps) Scale(instances int, force bool) error {
+func (fa *Apps) Scale(instances int, force bool) error {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 
-		Logger.Debug("FilteredApps: Scale %d %v [%+v] %d", instances, force, fa.apps.Apps, len(fa.apps.Apps))
+		marathon.Logger.Debug("FilteredApps: Scale %d %v [%+v] %d", instances, force, fa.apps.Apps, len(fa.apps.Apps))
 
-		appHandler := NewApplication(fa.marathon)
+		appHandler := application.New(fa.client)
 		for index, app := range fa.apps.Apps {
 
 			if err := appHandler.Get(app.ID).Scale(instances, force); err != nil {
@@ -124,13 +118,13 @@ func (fa *FilteredApps) Scale(instances int, force bool) error {
 }
 
 // Stop sets instances of a Marathon filteredApps to 0
-func (fa *FilteredApps) Stop(force bool) error {
+func (fa *Apps) Stop(force bool) error {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 
-		Logger.Debug("FilteredApps: Stop %v [%+v] %d", force, fa.apps.Apps, len(fa.apps.Apps))
+		marathon.Logger.Debug("FilteredApps: Stop %v [%+v] %d", force, fa.apps.Apps, len(fa.apps.Apps))
 
-		appHandler := NewApplication(fa.marathon)
+		appHandler := application.New(fa.client)
 		for index, app := range fa.apps.Apps {
 
 			if err := appHandler.Get(app.ID).Stop(force); err != nil {
@@ -144,13 +138,13 @@ func (fa *FilteredApps) Stop(force bool) error {
 }
 
 // Start sets instances of a Marathon filteredApps to a number provided
-func (fa *FilteredApps) Start(instances int, force bool) error {
+func (fa *Apps) Start(instances int, force bool) error {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 
-		Logger.Debug("FilteredApps: Start %v [%+v] %d", force, fa.apps.Apps, len(fa.apps.Apps))
+		marathon.Logger.Debug("FilteredApps: Start %v [%+v] %d", force, fa.apps.Apps, len(fa.apps.Apps))
 
-		appHandler := NewApplication(fa.marathon)
+		appHandler := application.New(fa.client)
 		for index, app := range fa.apps.Apps {
 			if err := appHandler.Get(app.ID).Start(instances, force); err != nil {
 				return err
@@ -163,13 +157,13 @@ func (fa *FilteredApps) Start(instances int, force bool) error {
 }
 
 // Restart use an endpoint to trigger a Marathon filteredApps restart
-func (fa *FilteredApps) Restart(force bool) error {
+func (fa *Apps) Restart(force bool) error {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 
-		Logger.Debug("FilteredApps: Restart %v [%+v] %d", force, fa.apps.Apps, len(fa.apps.Apps))
+		marathon.Logger.Debug("FilteredApps: Restart %v [%+v] %d", force, fa.apps.Apps, len(fa.apps.Apps))
 
-		appHandler := NewApplication(fa.marathon)
+		appHandler := application.New(fa.client)
 		for _, app := range fa.apps.Apps {
 			if err := appHandler.Get(app.ID).Restart(force); err != nil {
 				return err
@@ -181,13 +175,13 @@ func (fa *FilteredApps) Restart(force bool) error {
 }
 
 // Suspend is an alias to Stop
-func (fa *FilteredApps) Suspend(force bool) error {
+func (fa *Apps) Suspend(force bool) error {
 
 	return fa.Stop(force)
 }
 
 // Load allows create or update a Marathon filteredApps from file
-func (fa *FilteredApps) Load(fileName, filter string) *FilteredApps {
+func (fa *Apps) Load(fileName, filter string) *Apps {
 
 	var err error
 	_apps := &apps{}
@@ -202,21 +196,21 @@ func (fa *FilteredApps) Load(fileName, filter string) *FilteredApps {
 	if err == nil {
 		for _, app := range _apps.Apps {
 			if strings.HasPrefix(app.ID, filter) {
-				Logger.Debug("FilteredApps: Load %s match", app.ID)
+				marathon.Logger.Debug("FilteredApps: Load %s match", app.ID)
 				fa.apps.Apps = append(fa.apps.Apps, app)
 			}
 		}
-		Logger.Debug("FilteredApps: Load (%s) found %d apps", filter, len(fa.apps.Apps))
+		marathon.Logger.Debug("FilteredApps: Load (%s) found %d apps", filter, len(fa.apps.Apps))
 	} else {
 		fa.apps.Apps = nil
-		fa.apps.Apps = []AppDefinition{}
+		fa.apps.Apps = []application.AppDefinition{}
 	}
 
 	return fa
 }
 
 // Dump allows to create a file with the configuration of filteredApps
-func (fa *FilteredApps) Dump(fileName string) (err error) {
+func (fa *Apps) Dump(fileName string) (err error) {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 
@@ -233,7 +227,7 @@ func (fa *FilteredApps) Dump(fileName string) (err error) {
 }
 
 // Dump allows to create a file with the configuration of filteredApps
-func (fa *FilteredApps) DumpSingly(baseName string) (err error) {
+func (fa *Apps) DumpSingly(baseName string) (err error) {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 
@@ -247,7 +241,7 @@ func (fa *FilteredApps) DumpSingly(baseName string) (err error) {
 				appFileName := baseName + utilities.BaseName(app.ID) + ".json"
 				err = utilities.WriteDataToJSON(app, appFileName)
 				if err != nil {
-					Logger.Error("Writing app %s [%+v]", app.ID, err)
+					marathon.Logger.Error("Writing app %s [%+v]", app.ID, err)
 				}
 			}
 
@@ -261,10 +255,10 @@ func (fa *FilteredApps) DumpSingly(baseName string) (err error) {
 }
 
 // FilterBy make a new apps.Apps just with those match filterFunc
-func (fa *FilteredApps) FilterBy(filterFunc FilterFunction) *FilteredApps {
+func (fa *Apps) FilterBy(filterFunc FilterFunction) *Apps {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
-		var filtered []AppDefinition
+		var filtered []application.AppDefinition
 
 		for _, app := range fa.apps.Apps {
 			if filterFunc(app) {
@@ -277,7 +271,7 @@ func (fa *FilteredApps) FilterBy(filterFunc FilterFunction) *FilteredApps {
 }
 
 // AsMap returns a map of Summary Info
-func (fa *FilteredApps) AsMap() map[string]AppSummary {
+func (fa *Apps) AsMap() map[string]AppSummary {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 
@@ -298,7 +292,7 @@ func (fa *FilteredApps) AsMap() map[string]AppSummary {
 }
 
 // AsRaw returns a pointer of Application Info
-func (fa *FilteredApps) AsRaw() []AppDefinition {
+func (fa *Apps) AsRaw() []application.AppDefinition {
 
 	if fa.apps != nil && len(fa.apps.Apps) > 0 {
 		return fa.apps.Apps

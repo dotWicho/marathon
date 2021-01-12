@@ -39,7 +39,7 @@ module myclient
 go 1.13
 
 require (
-	github.com/dotWicho/marathon v1.4.4
+	github.com/dotWicho/marathon latest
 )
 ```
 

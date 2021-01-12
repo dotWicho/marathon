@@ -1,8 +1,10 @@
-package marathon
+package application
 
 import (
 	"errors"
 	"fmt"
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/data"
 	"github.com/dotWicho/utilities"
 	"path/filepath"
 	"regexp"
@@ -51,8 +53,8 @@ type application interface {
 	Role() string
 	SetRole(to string, force bool) error
 
-	Container() *Container
-	SetContainer(to *Container, force bool) error
+	Container() *marathon.Container
+	SetContainer(to *marathon.Container, force bool) error
 
 	Parameters() (map[string]string, error)
 	AddParameter(key, value string, force bool) error
@@ -66,48 +68,44 @@ type application interface {
 
 // Application is a Marathon Application implementation
 type Application struct {
-	marathon *Client
-	timeout  time.Duration
+	client  *marathon.Client
+	timeout time.Duration
 
 	//
 	app *App
 
 	//
-	baseURL string
-	auth    string
-
-	//
-	deploy *Response
-	fail   *FailureMessage
+	deploy *data.Response
+	fail   *data.FailureMessage
 }
 
 //=== Marathon FilteredApps JSON Entities definition
 
 // AppDefinition encapsulates the data definitions of a Marathon App
 type AppDefinition struct {
-	ID                    string              `json:"id"`
-	AcceptedResourceRoles []string            `json:"acceptedResourceRoles,omitempty"`
-	BackoffFactor         float64             `json:"backoffFactor,omitempty"`
-	BackoffSeconds        int                 `json:"backoffSeconds,omitempty"`
-	Container             Container           `json:"container"`
-	Constraints           []TaskConstraints   `json:"constraints,omitempty"`
-	Cpus                  float64             `json:"cpus"`
-	Disk                  float64             `json:"disk,omitempty"`
-	Env                   map[string]string   `json:"env,omitempty"`
-	Executor              string              `json:"executor,omitempty"`
-	Fetch                 []Fetch             `json:"fetch,omitempty"`
-	HealthChecks          []Healthcheck       `json:"healthChecks,omitempty"`
-	Instances             int                 `json:"instances"`
-	Labels                map[string]string   `json:"labels,omitempty"`
-	MaxLaunchDelaySeconds int                 `json:"maxLaunchDelaySeconds,omitempty"`
-	Mem                   float64             `json:"mem"`
-	Gpus                  int                 `json:"gpus,omitempty"`
-	Networks              []Network           `json:"networks,omitempty"`
-	RequirePorts          bool                `json:"requirePorts,omitempty"`
-	UpgradeStrategy       UpgradeStrategy     `json:"upgradeStrategy,omitempty"`
-	KillSelection         string              `json:"killSelection,omitempty"`
-	UnreachableStrategy   UnreachableStrategy `json:"unreachableStrategy,omitempty"`
-	Role                  string              `json:"role,omitempty"`
+	ID                    string                 `json:"id"`
+	AcceptedResourceRoles []string               `json:"acceptedResourceRoles,omitempty"`
+	BackoffFactor         float64                `json:"backoffFactor,omitempty"`
+	BackoffSeconds        int                    `json:"backoffSeconds,omitempty"`
+	Container             marathon.Container     `json:"container"`
+	Constraints           []TaskConstraints      `json:"constraints,omitempty"`
+	Cpus                  float64                `json:"cpus"`
+	Disk                  float64                `json:"disk,omitempty"`
+	Env                   map[string]string      `json:"env,omitempty"`
+	Executor              string                 `json:"executor,omitempty"`
+	Fetch                 []Fetch                `json:"fetch,omitempty"`
+	HealthChecks          []marathon.Healthcheck `json:"healthChecks,omitempty"`
+	Instances             int                    `json:"instances"`
+	Labels                map[string]string      `json:"labels,omitempty"`
+	MaxLaunchDelaySeconds int                    `json:"maxLaunchDelaySeconds,omitempty"`
+	Mem                   float64                `json:"mem"`
+	Gpus                  int                    `json:"gpus,omitempty"`
+	Networks              []Network              `json:"networks,omitempty"`
+	RequirePorts          bool                   `json:"requirePorts,omitempty"`
+	UpgradeStrategy       UpgradeStrategy        `json:"upgradeStrategy,omitempty"`
+	KillSelection         string                 `json:"killSelection,omitempty"`
+	UnreachableStrategy   UnreachableStrategy    `json:"unreachableStrategy,omitempty"`
+	Role                  string                 `json:"role,omitempty"`
 }
 
 // TaskConstraints is a simple array of strings
@@ -150,17 +148,14 @@ type AppVersions struct {
 }
 
 // NewApplication returns a new instance of Marathon application implementation
-func NewApplication(marathon *Client) *Application {
+func New(client *marathon.Client) *Application {
 
-	if marathon != nil {
+	if client != nil {
 		return &Application{
-			marathon: marathon,
-			timeout:  marathon.timeout,
-			app:      &App{},
-			baseURL:  marathon.baseURL,
-			auth:     marathon.auth,
-			deploy:   &Response{},
-			fail:     &FailureMessage{},
+			client:  client,
+			app:     &App{},
+			deploy:  &data.Response{},
+			fail:    &data.FailureMessage{},
 		}
 	}
 	return nil
@@ -174,12 +169,12 @@ func (ma *Application) Get(id string) *Application {
 	if len(id) > 0 {
 		ma.clear()
 
-		Logger.Debug("Application: Get %s %+v", id, ma.app.App)
+		marathon.Logger.Debug("Application: Get %s %+v", id, ma.app.App)
 
-		path := fmt.Sprintf("%s%s", marathonAPIApps, utilities.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathon.APIApps, utilities.DelInitialSlash(id))
 
-		if _, err := ma.marathon.Session.BodyAsJSON(nil).Get(path, ma.app, ma.fail); err != nil {
-			Logger.Debug("Application: Get failed [%+v]", err)
+		if _, err := ma.client.Session.BodyAsJSON(nil).Get(path, ma.app, ma.fail); err != nil {
+			marathon.Logger.Debug("Application: Get failed [%+v]", err)
 			ma.clear()
 		}
 	}
@@ -190,7 +185,7 @@ func (ma *Application) Get(id string) *Application {
 func (ma *Application) Set(app AppDefinition) *Application {
 
 	if len(app.ID) > 0 {
-		Logger.Debug("Application: Set id = %s", app.ID)
+		marathon.Logger.Debug("Application: Set id = %s", app.ID)
 		ma.clear()
 		ma.app.App = app
 	}
@@ -201,7 +196,7 @@ func (ma *Application) Set(app AppDefinition) *Application {
 func (ma *Application) Create(app AppDefinition) *Application {
 
 	if len(app.ID) > 0 {
-		Logger.Debug("Application: Create id = [%s] body = %+v", app.ID, app)
+		marathon.Logger.Debug("Application: Create id = [%s] body = %+v", app.ID, app)
 
 		ma.app.App = app
 		_ = ma.Apply(true)
@@ -213,13 +208,13 @@ func (ma *Application) Create(app AppDefinition) *Application {
 func (ma *Application) Destroy() error {
 
 	if len(ma.app.App.ID) > 0 {
-		Logger.Debug("Application: Destroy id = [%s] body = %+v", ma.app.App.ID, ma.app.App)
+		marathon.Logger.Debug("Application: Destroy id = [%s] body = %+v", ma.app.App.ID, ma.app.App)
 
-		path := fmt.Sprintf("%s%s", marathonAPIApps, utilities.DelInitialSlash(ma.app.App.ID))
+		path := fmt.Sprintf("%s%s", marathon.APIApps, utilities.DelInitialSlash(ma.app.App.ID))
 
 		ma.clear()
-		if _, err := ma.marathon.Session.BodyAsJSON(nil).Delete(path, ma.deploy, ma.fail); err != nil {
-			Logger.Debug("Application: Destroy failed [%+v]", err)
+		if _, err := ma.client.Session.BodyAsJSON(nil).Delete(path, ma.deploy, ma.fail); err != nil {
+			marathon.Logger.Debug("Application: Destroy failed [%+v]", err)
 			return err
 		}
 		return nil
@@ -231,7 +226,7 @@ func (ma *Application) Destroy() error {
 func (ma *Application) Update(app AppDefinition) error {
 
 	if len(app.ID) > 0 {
-		Logger.Debug("Application: Update id = [%s] body = %+v", app.ID, app)
+		marathon.Logger.Debug("Application: Update id = [%s] body = %+v", app.ID, app)
 
 		ma.app.App = app
 		return ma.Apply(true)
@@ -252,7 +247,7 @@ func (ma *Application) Instances() int {
 func (ma *Application) Scale(instances int, force bool) error {
 
 	if len(ma.app.App.ID) > 0 {
-		Logger.Debug("Application: Scale %s to %d force=%v", ma.app.App.ID, instances, force)
+		marathon.Logger.Debug("Application: Scale %s to %d force=%v", ma.app.App.ID, instances, force)
 		ma.app.App.Instances = instances
 
 		return ma.Apply(force)
@@ -276,16 +271,16 @@ func (ma *Application) Stop(force bool) error {
 func (ma *Application) Restart(force bool) error {
 
 	if len(ma.app.App.ID) > 0 {
-		Logger.Debug("Application: Restart id = [%s] force = %v", ma.app.App.ID, force)
+		marathon.Logger.Debug("Application: Restart id = [%s] force = %v", ma.app.App.ID, force)
 
-		path := fmt.Sprintf("%s%s/restart", marathonAPIApps, utilities.DelInitialSlash(ma.app.App.ID))
+		path := fmt.Sprintf("%s%s/restart", marathon.APIApps, utilities.DelInitialSlash(ma.app.App.ID))
 
 		if force {
-			ma.marathon.Session.AddQueryParam("force", "true")
+			ma.client.Session.AddQueryParam("force", "true")
 		}
 
-		if _, err := ma.marathon.Session.BodyAsJSON(nil).Post(path, ma.deploy, ma.fail); err != nil {
-			Logger.Debug("Application: Restart failed [%+v]", err)
+		if _, err := ma.client.Session.BodyAsJSON(nil).Post(path, ma.deploy, ma.fail); err != nil {
+			marathon.Logger.Debug("Application: Restart failed [%+v]", err)
 			return err
 		}
 		return nil
@@ -303,7 +298,7 @@ func (ma *Application) Suspend(force bool) error {
 func (ma *Application) GetTag() (string, error) {
 
 	if len(ma.app.App.ID) > 0 {
-		re := regexp.MustCompile(DockerImageRegEx)
+		re := regexp.MustCompile(marathon.DockerImageRegEx)
 		elements := re.FindStringSubmatch(ma.app.App.Container.Docker.Image)
 
 		return elements[len(elements)-1], nil
@@ -315,7 +310,7 @@ func (ma *Application) GetTag() (string, error) {
 func (ma *Application) SetTag(tag string, force bool) error {
 
 	if len(ma.app.App.ID) > 0 {
-		re := regexp.MustCompile(DockerImageRegEx)
+		re := regexp.MustCompile(marathon.DockerImageRegEx)
 		elements := re.FindStringSubmatch(ma.app.App.Container.Docker.Image)
 
 		ma.app.App.Container.Docker.Image = fmt.Sprintf("%s%s/%s:%s", elements[1], elements[4], elements[6], tag)
@@ -421,7 +416,7 @@ func (ma *Application) SetRole(to string, force bool) error {
 }
 
 // Container returns the Container information of a Marathon application
-func (ma *Application) Container() *Container {
+func (ma *Application) Container() *marathon.Container {
 
 	if len(ma.app.App.ID) > 0 {
 
@@ -431,13 +426,13 @@ func (ma *Application) Container() *Container {
 }
 
 // SetContainer sets the Container information of a Marathon application
-func (ma *Application) SetContainer(to *Container, force bool) error {
+func (ma *Application) SetContainer(to *marathon.Container, force bool) error {
 
 	if len(ma.app.App.ID) > 0 {
 
-		ma.app.App.Container = Container{
+		ma.app.App.Container = marathon.Container{
 			Type: to.Type,
-			Docker: Docker{
+			Docker: marathon.Docker{
 				ForcePullImage: to.Docker.ForcePullImage,
 				Image:          to.Docker.Image,
 				Parameters:     to.Docker.Parameters,
@@ -494,7 +489,7 @@ func (ma *Application) AddParameter(key, value string, force bool) error {
 			ma.app.App.Container.Docker.Parameters[index].Value = value
 		} else {
 			// Create, append it
-			ma.app.App.Container.Docker.Parameters = append(ma.app.App.Container.Docker.Parameters, DockerParameters{
+			ma.app.App.Container.Docker.Parameters = append(ma.app.App.Container.Docker.Parameters, marathon.DockerParameters{
 				Key:   key,
 				Value: value,
 			})
@@ -521,7 +516,7 @@ func (ma *Application) DelParameter(key string, force bool) error {
 			length := len(ma.app.App.Container.Docker.Parameters)
 
 			ma.app.App.Container.Docker.Parameters[toRemove] = ma.app.App.Container.Docker.Parameters[length-1]
-			ma.app.App.Container.Docker.Parameters[length-1] = DockerParameters{
+			ma.app.App.Container.Docker.Parameters[length-1] = marathon.DockerParameters{
 				Key:   "",
 				Value: "",
 			}
@@ -580,19 +575,19 @@ func (ma *Application) Apply(force bool) error {
 
 	if len(ma.app.App.ID) > 0 {
 
-		path := fmt.Sprintf("%s%s", marathonAPIApps, utilities.DelInitialSlash(ma.app.App.ID))
+		path := fmt.Sprintf("%s%s", marathon.APIApps, utilities.DelInitialSlash(ma.app.App.ID))
 
-		Logger.Debug("Application: Apply(%v)[%+v] %s", force, ma.app, path)
+		marathon.Logger.Debug("Application: Apply(%v)[%+v] %s", force, ma.app, path)
 		if force {
-			ma.marathon.Session.AddQueryParam("force", "true")
+			ma.client.Session.AddQueryParam("force", "true")
 		}
 
-		if _, err := ma.marathon.Session.BodyAsJSON(ma.app.App).Put(path, ma.deploy, ma.fail); err != nil {
-			Logger.Debug("Application: Apply StatusCode: %d [Deploy Id: %s => date: %v {%+v}{%+v}]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version, ma.fail, err)
+		if _, err := ma.client.Session.BodyAsJSON(ma.app.App).Put(path, ma.deploy, ma.fail); err != nil {
+			marathon.Logger.Debug("Application: Apply StatusCode: %d [Deploy Id: %s => date: %v {%+v}{%+v}]", ma.client.StatusCode(), ma.deploy.ID, ma.deploy.Version, ma.fail, err)
 			return err
 		}
 		// TODO: Deployment wait for ma.timeout
-		Logger.Debug("Application: Apply StatusCode: %d [Deploy Id: %s => date: %v]", ma.marathon.StatusCode(), ma.deploy.ID, ma.deploy.Version)
+		marathon.Logger.Debug("Application: Apply StatusCode: %d [Deploy Id: %s => date: %v]", ma.client.StatusCode(), ma.deploy.ID, ma.deploy.Version)
 
 		return nil
 	}

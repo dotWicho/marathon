@@ -1,6 +1,7 @@
 package marathon
 
 import (
+	"github.com/dotWicho/marathon/mockserver"
 	"github.com/stretchr/testify/assert"
 	"net/url"
 	"testing"
@@ -184,7 +185,7 @@ func TestClient_Connect(t *testing.T) {
 func TestClient_CheckConnection(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	// Try to create Client
@@ -200,10 +201,10 @@ func TestClient_CheckConnection(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check some values
-	assert.Equal(t, "v1.0.0", _client.MarathonVersion())
-	assert.Equal(t, "127.0.0.10:8080", _client.MarathonLeader())
-	assert.Equal(t, "97c136bf-5a28-4821-9d94-480d9fbb01c8", _client.MarathonFramework())
-	assert.Equal(t, "127.0.0.10:2181", _client.MarathonZookeeper())
+	assert.Equal(t, "v1.0.0", _client.Version())
+	assert.Equal(t, "127.0.0.10:8080", _client.Leader())
+	assert.Equal(t, "97c136bf-5a28-4821-9d94-480d9fbb01c8", _client.Framework())
+	assert.Equal(t, "127.0.0.10:2181", _client.Zookeeper())
 
 }
 

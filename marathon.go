@@ -3,6 +3,7 @@ package marathon
 import (
 	"fmt"
 	"github.com/dotWicho/logger"
+	"github.com/dotWicho/marathon/data"
 	"github.com/dotWicho/requist"
 	"net/url"
 	"time"
@@ -21,10 +22,10 @@ type client interface {
 	SetBasicAuth(username, password string)
 
 	// Marathon Info interface
-	MarathonVersion() string
-	MarathonLeader() string
-	MarathonFramework() string
-	MarathonZookeeper() string
+	Version() string
+	Leader() string
+	Framework() string
+	Zookeeper() string
 }
 
 // Client is implementation of Marathon application interface
@@ -33,10 +34,10 @@ type Client struct {
 	timeout time.Duration
 
 	//
-	info *Info
+	info *data.Info
 
 	//
-	fail *FailureMessage
+	fail *data.FailureMessage
 
 	//
 	auth    string
@@ -86,8 +87,8 @@ func (mc *Client) New(base *url.URL) *Client {
 	if marathon.Session != nil {
 		requist.Logger = Logger
 		marathon.baseURL = base.String()
-		marathon.info = &Info{}
-		marathon.fail = &FailureMessage{}
+		marathon.info = &data.Info{}
+		marathon.fail = &data.FailureMessage{}
 
 		if base.User.String() != "" {
 			if pass, check := base.User.Password(); check {
@@ -95,7 +96,7 @@ func (mc *Client) New(base *url.URL) *Client {
 			}
 			marathon.auth = marathon.Session.GetBasicAuth()
 		}
-		marathon.SetTimeout(defaultDeploymentTimeout)
+		marathon.SetTimeout(DeploymentTimeout)
 		marathon.Session.Accept("application/json")
 		marathon.Session.SetHeader("Cache-Control", "no-cache")
 		marathon.Session.SetHeader("Accept-Encoding", "identity")
@@ -108,7 +109,6 @@ func (mc *Client) New(base *url.URL) *Client {
 
 // Connect sets baseURL and prepares the Client with this
 func (mc *Client) Connect(baseURL string) {
-	mc.Session = nil
 	mc.Session = requist.New(baseURL)
 }
 
@@ -120,13 +120,13 @@ func (mc *Client) StatusCode() int {
 // CheckConnection send a request to check Marathon server connectivity
 func (mc *Client) CheckConnection() error {
 
-	if _, err := mc.Session.Get(marathonAPIPing, nil, nil); err != nil {
+	if _, err := mc.Session.Get(APIPing, nil, nil); err != nil {
 		Logger.Debug("CheckConnection unable to connect to Marathon server")
 		return fmt.Errorf("unable to connect to Marathon server %s", mc.baseURL)
 	}
 	if mc.StatusCode() == 200 {
 		Logger.Debug("CheckConnection successful")
-		if _, err := mc.Session.Get(marathonAPIInfo, mc.info, mc.fail); err != nil {
+		if _, err := mc.Session.Get(APIInfo, mc.info, mc.fail); err != nil {
 			return fmt.Errorf("unable to get info from Marathon server %s", mc.baseURL)
 		}
 		Logger.Debug("CheckConnection: Marathon version = %s", mc.info.Version)
@@ -151,25 +151,25 @@ func (mc *Client) SetBasicAuth(username, password string) {
 //=== Marathon Info interface definitions ===
 
 // MarathonVersion returns version of Marathon
-func (mc *Client) MarathonVersion() string {
+func (mc *Client) Version() string {
 
 	return mc.info.Version
 }
 
 // MarathonLeader returns actual Marathon leader server
-func (mc *Client) MarathonLeader() string {
+func (mc *Client) Leader() string {
 
 	return mc.info.Leader
 }
 
 // MarathonFramework returns the id of this Marathon on Mesos
-func (mc *Client) MarathonFramework() string {
+func (mc *Client) Framework() string {
 
 	return mc.info.FrameworkID
 }
 
 // MarathonZookeeper return Zookeeper server(s) address
-func (mc *Client) MarathonZookeeper() string {
+func (mc *Client) Zookeeper() string {
 
 	return mc.info.ZookeeperConfig.Zk
 }

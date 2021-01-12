@@ -1,17 +1,19 @@
-package marathon
+package deployment
 
 import (
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/mockserver"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-func Test_NewDeployments(t *testing.T) {
+func Test_New(t *testing.T) {
 
 	t.Run("nil Deployment if send nil client", func(t *testing.T) {
 
 		// Try to create Deployments
-		_deploy := NewDeployments(nil)
+		_deploy := New(nil)
 
 		// Deployments is nil
 		assert.Nil(t, _deploy)
@@ -20,7 +22,7 @@ func Test_NewDeployments(t *testing.T) {
 	t.Run("valid Deployment if send valid client", func(t *testing.T) {
 
 		// Try to create Deployments
-		_deploy := NewDeployments(New("http://127.0.0.1:8080"))
+		_deploy := New(marathon.New("http://127.0.0.1:8080"))
 
 		// Deployments is not nil
 		assert.NotNil(t, _deploy)
@@ -30,13 +32,13 @@ func Test_NewDeployments(t *testing.T) {
 func TestDeployments_Get(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty array of Deployments", func(t *testing.T) {
 
 		// Try to create Deployment
-		_deploy := NewDeployments(New(server.URL))
+		_deploy := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refdeploy, err := _deploy.Get()
@@ -53,10 +55,10 @@ func TestDeployments_Get(t *testing.T) {
 
 	t.Run("get valid Deployments if exists", func(t *testing.T) {
 
-		deployArray = someDeployments
+		mockserver.DeployArray = mockserver.SomeDeployments
 
 		// Try to create Deployment
-		_deploy := NewDeployments(New(server.URL))
+		_deploy := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refDeploy, err := _deploy.Get()
@@ -78,13 +80,13 @@ func TestDeployments_Get(t *testing.T) {
 func TestDeployments_Rollback(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error with invalid Deployment id", func(t *testing.T) {
 
 		// Try to create Deployment
-		_deploy := NewDeployments(New(server.URL))
+		_deploy := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _deploy.Rollback("")
@@ -99,10 +101,10 @@ func TestDeployments_Rollback(t *testing.T) {
 
 	t.Run("get valid Deployments if exists and then Rollback", func(t *testing.T) {
 
-		deployArray = someDeployments
+		mockserver.DeployArray = mockserver.SomeDeployments
 
 		// Try to create Deployment
-		_deploy := NewDeployments(New(server.URL))
+		_deploy := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _deploy.Rollback("97c136bf-5a28-4821-9d94-480d9fbb01c8")
@@ -121,17 +123,17 @@ func TestDeployments_Rollback(t *testing.T) {
 func TestDeployments_Await(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	//
 	var timeout time.Duration = 5 * time.Second
-	deployArray = someDeployments
+	mockserver.DeployArray = mockserver.SomeDeployments
 
 	t.Run("returns nil when Deploy don't found", func(t *testing.T) {
 
 		// Try to create Deployment
-		_deploy := NewDeployments(New(server.URL))
+		_deploy := New(marathon.New(server.URL))
 
 		// deploy Id to check
 		id := "97c136bf-5a28-4821-9d94-480d9fbb01cX"
@@ -146,7 +148,7 @@ func TestDeployments_Await(t *testing.T) {
 	t.Run("returns err when Deploy still existing and timeout was reached", func(t *testing.T) {
 
 		// Try to create Deployment
-		_deploy := NewDeployments(New(server.URL))
+		_deploy := New(marathon.New(server.URL))
 
 		// deploy Id to check
 		id := "97c136bf-5a28-4821-9d94-480d9fbb01c8"
@@ -162,7 +164,7 @@ func TestDeployments_Await(t *testing.T) {
 	t.Run("return nil when Deploy exist and finish before timeout", func(t *testing.T) {
 
 		// Try to create Deployment
-		_deploy := NewDeployments(New(server.URL))
+		_deploy := New(marathon.New(server.URL))
 
 		// deploy Id to check
 		id := "97c136bf-5a28-4821-9d94-480d9fbb01c8"

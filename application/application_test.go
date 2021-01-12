@@ -1,7 +1,9 @@
-package marathon
+package application
 
 import (
 	"encoding/json"
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/mockserver"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -13,7 +15,7 @@ func Test_NewApplication(t *testing.T) {
 	t.Run("nil Application if send nil client", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(nil)
+		_app := New(nil)
 
 		// Application must be nil
 		assert.Nil(t, _app)
@@ -22,7 +24,7 @@ func Test_NewApplication(t *testing.T) {
 	t.Run("valid Application if send valid client", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New("http://127.0.0.1:8080"))
+		_app := New(marathon.New("http://127.0.0.1:8080"))
 
 		// Application must be not nil
 		assert.NotNil(t, _app)
@@ -32,13 +34,13 @@ func Test_NewApplication(t *testing.T) {
 func TestApplication_Get(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty Application ref if id is empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refapp := _app.Get("")
@@ -56,7 +58,7 @@ func TestApplication_Get(t *testing.T) {
 		appID := "/infra/redis-1"
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refapp := _app.Get(appID)
@@ -75,7 +77,7 @@ func TestApplication_Get(t *testing.T) {
 func TestApplication_Set(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty Application ref if id is empty", func(t *testing.T) {
@@ -84,7 +86,7 @@ func TestApplication_Set(t *testing.T) {
 		emptyApp := AppDefinition{}
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refapp := _app.Set(emptyApp)
@@ -100,10 +102,10 @@ func TestApplication_Set(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Set with valid app
 		_refapp := _app.Set(redisApp.App)
@@ -122,7 +124,7 @@ func TestApplication_Set(t *testing.T) {
 func TestApplication_Create(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty Application ref if app is empty", func(t *testing.T) {
@@ -130,7 +132,7 @@ func TestApplication_Create(t *testing.T) {
 		// we define some vars
 		emptyApp := AppDefinition{}
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refapp := _app.Create(emptyApp)
@@ -146,10 +148,10 @@ func TestApplication_Create(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refapp := _app.Create(redisApp.App)
@@ -171,13 +173,13 @@ func TestApplication_Create(t *testing.T) {
 func TestApplication_Destroy(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error if Application ref is empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Destroy()
@@ -194,10 +196,10 @@ func TestApplication_Destroy(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Set with valid app
 		_ = _app.Set(redisApp.App)
@@ -216,7 +218,7 @@ func TestApplication_Destroy(t *testing.T) {
 func TestApplication_Update(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty Application ref if app is empty", func(t *testing.T) {
@@ -225,7 +227,7 @@ func TestApplication_Update(t *testing.T) {
 		emptyApp := AppDefinition{}
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Update(emptyApp)
@@ -242,10 +244,10 @@ func TestApplication_Update(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Update(redisApp.App)
@@ -264,13 +266,13 @@ func TestApplication_Update(t *testing.T) {
 func TestApplication_Instances(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get -1 when Instances is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		instances := _app.Instances()
@@ -286,10 +288,10 @@ func TestApplication_Instances(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		instances := _app.Get(redisApp.App.ID).Instances()
@@ -305,13 +307,13 @@ func TestApplication_Instances(t *testing.T) {
 func TestApplication_Scale(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Scale is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Scale(2, true)
@@ -328,10 +330,10 @@ func TestApplication_Scale(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).Scale(2, true)
@@ -352,13 +354,13 @@ func TestApplication_Start(t *testing.T) {
 func TestApplication_Stop(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Stop is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Stop(true)
@@ -375,10 +377,10 @@ func TestApplication_Stop(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).Stop(true)
@@ -394,13 +396,13 @@ func TestApplication_Stop(t *testing.T) {
 func TestApplication_Restart(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Restart is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Restart(true)
@@ -417,10 +419,10 @@ func TestApplication_Restart(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).Restart(true)
@@ -436,13 +438,13 @@ func TestApplication_Restart(t *testing.T) {
 func TestApplication_Suspend(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Suspend is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Suspend(true)
@@ -459,10 +461,10 @@ func TestApplication_Suspend(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).Suspend(true)
@@ -478,13 +480,13 @@ func TestApplication_Suspend(t *testing.T) {
 func TestApplication_GetTag(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when GetTag is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		tag, err := _app.GetTag()
@@ -501,10 +503,10 @@ func TestApplication_GetTag(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		tag, err := _app.Get(redisApp.App.ID).GetTag()
@@ -520,13 +522,13 @@ func TestApplication_GetTag(t *testing.T) {
 func TestApplication_SetTag(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when SetTag is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.SetTag("4.0.10", true)
@@ -540,10 +542,10 @@ func TestApplication_SetTag(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).SetTag("4.0.10", true)
@@ -562,13 +564,13 @@ func TestApplication_SetTag(t *testing.T) {
 func TestApplication_Env(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Env is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		envs := _app.Env()
@@ -581,10 +583,10 @@ func TestApplication_Env(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		envs := _app.Get(redisApp.App.ID).Env()
@@ -601,13 +603,13 @@ func TestApplication_Env(t *testing.T) {
 func TestApplication_SetEnv(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when SetEnv is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.SetEnv("TESTED", "YES", true)
@@ -621,10 +623,10 @@ func TestApplication_SetEnv(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).SetEnv("TESTED", "YES", true)
@@ -642,13 +644,13 @@ func TestApplication_SetEnv(t *testing.T) {
 func TestApplication_DelEnv(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when DelEnv is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.DelEnv("REDISPORT", true)
@@ -662,10 +664,10 @@ func TestApplication_DelEnv(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_ = _app.Get(redisApp.App.ID).SetEnv("TESTED", "YES", true)
@@ -684,13 +686,13 @@ func TestApplication_DelEnv(t *testing.T) {
 func TestApplication_Cpus(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get -1 when Cpus is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		cpus := _app.Cpus()
@@ -703,10 +705,10 @@ func TestApplication_Cpus(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		cpus := _app.Get(redisApp.App.ID).Cpus()
@@ -719,13 +721,13 @@ func TestApplication_Cpus(t *testing.T) {
 func TestApplication_SetCpus(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get err when SetCpus is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.SetCpus(float64(4), true)
@@ -739,10 +741,10 @@ func TestApplication_SetCpus(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).SetCpus(float64(4), true)
@@ -758,13 +760,13 @@ func TestApplication_SetCpus(t *testing.T) {
 func TestApplication_Memory(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get -1 when Memory is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		memory := _app.Memory()
@@ -777,10 +779,10 @@ func TestApplication_Memory(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		memory := _app.Get(redisApp.App.ID).Memory()
@@ -793,13 +795,13 @@ func TestApplication_Memory(t *testing.T) {
 func TestApplication_SetMemory(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get err when SetMemory is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.SetMemory(float64(4096), true)
@@ -813,10 +815,10 @@ func TestApplication_SetMemory(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).SetMemory(float64(4096), true)
@@ -832,13 +834,13 @@ func TestApplication_SetMemory(t *testing.T) {
 func TestApplication_Role(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty when Role is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		role := _app.Role()
@@ -851,10 +853,10 @@ func TestApplication_Role(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		role := _app.Get(redisApp.App.ID).Role()
@@ -867,13 +869,13 @@ func TestApplication_Role(t *testing.T) {
 func TestApplication_SetRole(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get err when SetRole is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.SetRole("slave_private", true)
@@ -887,10 +889,10 @@ func TestApplication_SetRole(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).SetRole("slave_private", true)
@@ -906,13 +908,13 @@ func TestApplication_SetRole(t *testing.T) {
 func TestApplication_Container(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Parameters is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		containerRef := _app.Container()
@@ -925,10 +927,10 @@ func TestApplication_Container(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		containerRef := _app.Get(redisApp.App.ID).Container()
@@ -945,15 +947,15 @@ func TestApplication_Container(t *testing.T) {
 func TestApplication_SetContainer(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Parameters is called with app empty", func(t *testing.T) {
 
 		// We define some vars
-		container := &Container{
+		container := &marathon.Container{
 			Type: "DOCKER",
-			Docker: Docker{
+			Docker: marathon.Docker{
 				Image:          "fake.registry.org/redis:5.0.6",
 				Network:        "",
 				Privileged:     false,
@@ -965,7 +967,7 @@ func TestApplication_SetContainer(t *testing.T) {
 		}
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.SetContainer(container, true)
@@ -978,9 +980,9 @@ func TestApplication_SetContainer(t *testing.T) {
 	t.Run("get Params when Parameters is called with a valid app", func(t *testing.T) {
 
 		// we define some vars
-		container := &Container{
+		container := &marathon.Container{
 			Type: "DOCKER",
-			Docker: Docker{
+			Docker: marathon.Docker{
 				Image:          "fake.registry.org/redis:5.0.6",
 				Network:        "",
 				Privileged:     false,
@@ -991,10 +993,10 @@ func TestApplication_SetContainer(t *testing.T) {
 			PortMappings: nil,
 		}
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).SetContainer(container, true)
@@ -1010,13 +1012,13 @@ func TestApplication_SetContainer(t *testing.T) {
 func TestApplication_Parameter(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Parameters is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		params, err := _app.Parameters()
@@ -1032,10 +1034,10 @@ func TestApplication_Parameter(t *testing.T) {
 
 		// we define some vars
 		kongAppRef := &App{}
-		_ = json.Unmarshal([]byte(kongApp), kongAppRef)
+		_ = json.Unmarshal([]byte(mockserver.KongApp), kongAppRef)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		params, err := _app.Get(kongAppRef.App.ID).Parameters()
@@ -1050,10 +1052,10 @@ func TestApplication_Parameter(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		params, err := _app.Get(redisApp.App.ID).Parameters()
@@ -1069,13 +1071,13 @@ func TestApplication_Parameter(t *testing.T) {
 func TestApplication_AddParameter(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when AppParameters is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.AddParameter("TESTED", "YES", true)
@@ -1089,10 +1091,10 @@ func TestApplication_AddParameter(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).AddParameter("new-host", "10.64.128.1", true)
@@ -1111,13 +1113,13 @@ func TestApplication_AddParameter(t *testing.T) {
 func TestApplication_DelParameter(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when DelParameter is called with app empty", func(t *testing.T) {
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.DelParameter("add-host", true)
@@ -1131,10 +1133,10 @@ func TestApplication_DelParameter(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).DelParameter("add-folder", true)
@@ -1148,10 +1150,10 @@ func TestApplication_DelParameter(t *testing.T) {
 
 		// we define some vars
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).DelParameter("add-host", true)
@@ -1164,7 +1166,7 @@ func TestApplication_DelParameter(t *testing.T) {
 func TestApplication_Load(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Load is called with invalid file", func(t *testing.T) {
@@ -1173,7 +1175,7 @@ func TestApplication_Load(t *testing.T) {
 		fileName := "dumpfile.txt"
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_app = _app.Load(fileName)
@@ -1188,7 +1190,7 @@ func TestApplication_Load(t *testing.T) {
 		// We define some vars
 		fileName := "dumpfile.json"
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// We need create a []byte with redisApp.App because Dump writes that
 		redisRef, _ := json.MarshalIndent(redisApp.App, "", "  ")
@@ -1200,7 +1202,7 @@ func TestApplication_Load(t *testing.T) {
 		assert.Nil(t, errFile)
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_ = _app.Load(fileName)
@@ -1214,7 +1216,7 @@ func TestApplication_Load(t *testing.T) {
 func TestApplication_Dump(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Dump is called with app empty", func(t *testing.T) {
@@ -1223,7 +1225,7 @@ func TestApplication_Dump(t *testing.T) {
 		fileName := "dumpfile.json"
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Dump(fileName)
@@ -1239,13 +1241,13 @@ func TestApplication_Dump(t *testing.T) {
 		// We define some vars
 		fileName := "dumpfile.json"
 		redisApp := &App{}
-		_ = json.Unmarshal([]byte(appRedis), redisApp)
+		_ = json.Unmarshal([]byte(mockserver.AppRedis), redisApp)
 
 		// We need create a []byte with redisApp.App because Dump writes that
 		redisRef, _ := json.MarshalIndent(redisApp.App, "", "  ")
 
 		// Try to create Application
-		_app := NewApplication(New(server.URL))
+		_app := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _app.Get(redisApp.App.ID).Dump(fileName)

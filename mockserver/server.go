@@ -1,13 +1,14 @@
-package marathon
+package mockserver
 
 import (
 	"encoding/json"
+	"github.com/dotWicho/marathon/data"
 	"net/http"
 	"net/http/httptest"
 	"time"
 )
 
-const someDeployments = `[{
+const SomeDeployments = `[{
   "id": "97c136bf-5a28-4821-9d94-480d9fbb01c8",
   "version": "2015-09-30T09:09:17.614Z",
   "affectedApps": [ "/foo" ],
@@ -29,9 +30,9 @@ const someDeployments = `[{
     "totalSteps": 1
   }]`
 
-var deployArray = `[]`
+var DeployArray = `[]`
 
-var appsArray = `{
+var AppsArray = `{
  "apps": [{
    "id": "/infra/redis-1",
    "acceptedResourceRoles": [ "*" ],
@@ -97,7 +98,7 @@ var appsArray = `{
  ]
 }`
 
-var groupsArray = `{
+var GroupsArray = `{
   "id": "/infra",
   "apps": [
     {
@@ -556,7 +557,7 @@ var groupsArray = `{
   }
 }`
 
-var appRedis = `{
+var AppRedis = `{
   "app":   {
    "id": "/infra/redis-1",
    "acceptedResourceRoles": [ "*" ],
@@ -624,7 +625,7 @@ var appBroker = `{
   }
 }`
 
-var kongApp = `{
+var KongApp = `{
 	"app": {
 		"id": "/infra/kong-v2",
 		"acceptedResourceRoles": [
@@ -716,11 +717,11 @@ var kongApp = `{
 
 var times int = 0
 
-func MockMarathonServer() *httptest.Server {
+func MockServer() *httptest.Server {
 	// Mock Marathon server
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		fakeDeploy := &Response{
+		fakeDeploy := &data.Response{
 			ID:      "d4b75430-8ee6-47e9-95f2-6cf297aaac00",
 			Version: time.Now(),
 		}
@@ -733,15 +734,15 @@ func MockMarathonServer() *httptest.Server {
 			_, _ = w.Write([]byte(`pong`))
 
 		case "/v2/info":
-			fakeInfo := &Info{
+			fakeInfo := &data.Info{
 				Name:           "mock_marathon",
 				Version:        "v1.0.0",
 				Buildref:       "2020.01.01",
 				Elected:        false,
 				Leader:         "127.0.0.10:8080",
 				FrameworkID:    "97c136bf-5a28-4821-9d94-480d9fbb01c8",
-				MarathonConfig: Config{},
-				ZookeeperConfig: ZkConfig{
+				MarathonConfig: data.Config{},
+				ZookeeperConfig: data.ZkConfig{
 					Zk:                     "127.0.0.10:2181",
 					ZkCompression:          false,
 					ZkCompressionThreshold: 0,
@@ -751,7 +752,7 @@ func MockMarathonServer() *httptest.Server {
 					ZkSessionTimeout:       0,
 					ZkTimeout:              0,
 				},
-				HTTPConf: HTTPConfig{},
+				HTTPConf: data.HTTPConfig{},
 			}
 			infoBuffer, _ := json.Marshal(fakeInfo)
 
@@ -767,12 +768,12 @@ func MockMarathonServer() *httptest.Server {
 				times++
 
 				if times > 12 {
-					deployArray = `[]`
+					DeployArray = `[]`
 				}
 
 				w.WriteHeader(http.StatusOK)
 				w.Header().Add("Content-Type", "application/json")
-				_, _ = w.Write([]byte(deployArray))
+				_, _ = w.Write([]byte(DeployArray))
 
 			case http.MethodDelete:
 				w.WriteHeader(http.StatusAccepted)
@@ -799,7 +800,7 @@ func MockMarathonServer() *httptest.Server {
 			case http.MethodGet:
 				w.WriteHeader(http.StatusOK)
 				w.Header().Add("Content-Type", "application/json")
-				_, _ = w.Write([]byte(appsArray))
+				_, _ = w.Write([]byte(AppsArray))
 
 			case http.MethodPost:
 				w.WriteHeader(http.StatusOK)
@@ -815,7 +816,7 @@ func MockMarathonServer() *httptest.Server {
 			case http.MethodGet:
 				w.WriteHeader(http.StatusOK)
 				w.Header().Add("Content-Type", "application/json")
-				_, _ = w.Write([]byte(groupsArray))
+				_, _ = w.Write([]byte(GroupsArray))
 
 			case http.MethodPost:
 				w.WriteHeader(http.StatusOK)
@@ -836,7 +837,7 @@ func MockMarathonServer() *httptest.Server {
 			case http.MethodGet:
 				w.WriteHeader(http.StatusOK)
 				w.Header().Add("Content-Type", "application/json")
-				_, _ = w.Write([]byte(appRedis))
+				_, _ = w.Write([]byte(AppRedis))
 
 			case http.MethodPatch:
 				w.WriteHeader(http.StatusOK)
@@ -918,7 +919,7 @@ func MockMarathonServer() *httptest.Server {
 			case http.MethodGet:
 				w.WriteHeader(http.StatusOK)
 				w.Header().Add("Content-Type", "application/json")
-				_, _ = w.Write([]byte(kongApp))
+				_, _ = w.Write([]byte(KongApp))
 
 			case http.MethodDelete:
 				w.WriteHeader(http.StatusOK)

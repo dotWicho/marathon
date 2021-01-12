@@ -1,8 +1,11 @@
-package marathon
+package groups
 
 import (
 	"errors"
 	"fmt"
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/application"
+	"github.com/dotWicho/marathon/data"
 	"github.com/dotWicho/utilities"
 	"path/filepath"
 	"strings"
@@ -31,54 +34,47 @@ type groups interface {
 
 // Groups is Marathon Groups implementation
 type Groups struct {
-	marathon *Client
+	client *marathon.Client
 
 	//
 	group *Group
 
 	//
-	baseURL string
-	auth    string
-
-	//
-	deploy *Response
-	fail   *FailureMessage
+	deploy *data.Response
+	fail   *data.FailureMessage
 }
 
 // Group encapsulates the data definitions of a Marathon Group
 type Group struct {
-	ID           string          `json:"id"`
-	Apps         []AppDefinition `json:"apps"`
-	Groups       []Group         `json:"groups"`
-	Pods         []interface{}   `json:"pods"`
-	Dependencies []string        `json:"dependencies,omitempty"`
-	Version      time.Time       `json:"version,omitempty"`
-	VersionInfo  VersionInfo     `json:"versionInfo,omitempty"`
-	Executor     string          `json:"executor,omitempty"`
-	EnforceRole  bool            `json:"enforceRole,omitempty"`
+	ID           string                      `json:"id"`
+	Apps         []application.AppDefinition `json:"apps"`
+	Groups       []Group                     `json:"groups"`
+	Pods         []interface{}               `json:"pods"`
+	Dependencies []string                    `json:"dependencies,omitempty"`
+	Version      time.Time                   `json:"version,omitempty"`
+	VersionInfo  application.VersionInfo     `json:"versionInfo,omitempty"`
+	Executor     string                      `json:"executor,omitempty"`
+	EnforceRole  bool                        `json:"enforceRole,omitempty"`
 }
 
 // CallBackFuncsWithAppID function type
 type CallBackFuncsWithAppID func(appID string) error
 
 // CallBackFuncsWithAppDef function type
-type CallBackFuncsWithAppDef func(app AppDefinition) error
+type CallBackFuncsWithAppDef func(app application.AppDefinition) error
 
 //=== Marathon Application methods
 
 // NewGroups returns a new instance of Marathon groups implementation
-func NewGroups(marathon *Client) *Groups {
+func NewGroups(client *marathon.Client) *Groups {
 
-	if marathon != nil {
-		_groups := &Groups{
-			marathon: marathon,
-			group:    &Group{},
-			baseURL:  marathon.baseURL,
-			auth:     marathon.auth,
-			deploy:   &Response{},
-			fail:     &FailureMessage{},
+	if client != nil {
+		return &Groups{
+			client: client,
+			group:  &Group{},
+			deploy: &data.Response{},
+			fail:   &data.FailureMessage{},
 		}
-		return _groups
 	}
 	return nil
 }
@@ -89,9 +85,9 @@ func (mg *Groups) Get(id string) *Groups {
 	if len(id) > 0 {
 		mg.clear()
 
-		path := fmt.Sprintf("%s%s", marathonAPIGroups, utilities.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathon.APIGroups, utilities.DelInitialSlash(id))
 
-		if _, err := mg.marathon.Session.BodyAsJSON(nil).Get(path, mg.group, mg.fail); err != nil {
+		if _, err := mg.client.Session.BodyAsJSON(nil).Get(path, mg.group, mg.fail); err != nil {
 			mg.clear()
 		}
 	}
@@ -103,9 +99,9 @@ func (mg *Groups) Create(group *Group) error {
 
 	if mg.group != nil && len(group.ID) > 0 {
 
-		path := fmt.Sprintf("%s%s", marathonAPIGroups, utilities.DelInitialSlash(group.ID))
+		path := fmt.Sprintf("%s%s", marathon.APIGroups, utilities.DelInitialSlash(group.ID))
 
-		if _, err := mg.marathon.Session.BodyAsJSON(group).Post(path, mg.deploy, mg.fail); err != nil {
+		if _, err := mg.client.Session.BodyAsJSON(group).Post(path, mg.deploy, mg.fail); err != nil {
 			return err
 		}
 		mg.group = group
@@ -119,9 +115,9 @@ func (mg *Groups) Destroy() error {
 
 	if mg.group != nil && len(mg.group.ID) > 0 {
 
-		path := fmt.Sprintf("%s%s", marathonAPIGroups, utilities.DelInitialSlash(mg.group.ID))
+		path := fmt.Sprintf("%s%s", marathon.APIGroups, utilities.DelInitialSlash(mg.group.ID))
 
-		if _, err := mg.marathon.Session.BodyAsJSON(nil).Delete(path, mg.deploy, mg.fail); err != nil {
+		if _, err := mg.client.Session.BodyAsJSON(nil).Delete(path, mg.deploy, mg.fail); err != nil {
 			return err
 		}
 		mg.clear()
@@ -135,9 +131,9 @@ func (mg *Groups) Update(group *Group) error {
 
 	if mg.group != nil && len(group.ID) > 0 {
 
-		path := fmt.Sprintf("%s%s", marathonAPIGroups, utilities.DelInitialSlash(group.ID))
+		path := fmt.Sprintf("%s%s", marathon.APIGroups, utilities.DelInitialSlash(group.ID))
 
-		if _, err := mg.marathon.Session.BodyAsJSON(group).Post(path, mg.deploy, mg.fail); err != nil {
+		if _, err := mg.client.Session.BodyAsJSON(group).Post(path, mg.deploy, mg.fail); err != nil {
 			return err
 		}
 		mg.group = group
@@ -150,7 +146,7 @@ func (mg *Groups) Update(group *Group) error {
 func (mg *Groups) Scale(instances int, force bool) error {
 
 	if mg.group != nil && len(mg.group.ID) > 0 {
-		if appClient := NewApplication(mg.marathon); appClient != nil {
+		if appClient := application.New(mg.client); appClient != nil {
 
 			callbackFunc := func(appID string) error {
 
@@ -170,7 +166,7 @@ func (mg *Groups) Scale(instances int, force bool) error {
 func (mg *Groups) Stop(force bool) error {
 
 	if mg.group != nil && len(mg.group.ID) > 0 {
-		if appClient := NewApplication(mg.marathon); appClient != nil {
+		if appClient := application.New(mg.client); appClient != nil {
 
 			callbackFunc := func(appID string) error {
 
@@ -190,7 +186,7 @@ func (mg *Groups) Stop(force bool) error {
 func (mg *Groups) Start(instances int, force bool) error {
 
 	if mg.group != nil && len(mg.group.ID) > 0 {
-		if appClient := NewApplication(mg.marathon); appClient != nil {
+		if appClient := application.New(mg.client); appClient != nil {
 
 			callbackFunc := func(appID string) error {
 
@@ -210,7 +206,7 @@ func (mg *Groups) Start(instances int, force bool) error {
 func (mg *Groups) Restart(force bool) error {
 
 	if mg.group != nil && len(mg.group.ID) > 0 {
-		if appClient := NewApplication(mg.marathon); appClient != nil {
+		if appClient := application.New(mg.client); appClient != nil {
 
 			callbackFunc := func(appID string) error {
 
@@ -236,9 +232,9 @@ func (mg *Groups) Suspend(force bool) error {
 func (mg *Groups) Apply(force bool) error {
 
 	if mg.group != nil && len(mg.group.ID) > 0 {
-		if appClient := NewApplication(mg.marathon); appClient != nil {
+		if appClient := application.New(mg.client); appClient != nil {
 
-			callbackFunc := func(app AppDefinition) error {
+			callbackFunc := func(app application.AppDefinition) error {
 
 				if err := appClient.Set(app).Apply(force); err != nil {
 					return err
@@ -292,7 +288,7 @@ func (mg *Groups) Dump(fileName string) (err error) {
 // traverseGroupsWithAppID cross the group structure executing a CallBackFuncsWithAppID
 func (mg *Groups) traverseGroupsWithAppID(group *Group, callbackFunc CallBackFuncsWithAppID) (err error) {
 
-	Logger.Debug("traverseGroups: GROUP ID => %s", group.ID)
+	marathon.Logger.Debug("traverseGroups: GROUP ID => %s", group.ID)
 	if len(group.Apps) > 0 {
 		for _, app := range group.Apps {
 
@@ -313,7 +309,7 @@ func (mg *Groups) traverseGroupsWithAppID(group *Group, callbackFunc CallBackFun
 // traverseGroupsWithAppDefinition cross the group structure executing a CallBackFuncsWithAppDef
 func (mg *Groups) traverseGroupsWithAppDefinition(group *Group, callbackFunc CallBackFuncsWithAppDef) (err error) {
 
-	Logger.Debug("traverseGroups: GROUP ID => %s", group.ID)
+	marathon.Logger.Debug("traverseGroups: GROUP ID => %s", group.ID)
 	if len(group.Apps) > 0 {
 		for _, app := range group.Apps {
 

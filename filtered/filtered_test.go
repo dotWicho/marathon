@@ -1,7 +1,10 @@
-package marathon
+package filtered
 
 import (
 	"encoding/json"
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/application"
+	"github.com/dotWicho/marathon/mockserver"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -24,7 +27,7 @@ func Test_NewFilteredApps(t *testing.T) {
 	t.Run("valid Application if send valid client", func(t *testing.T) {
 
 		// Try to create FilteredApps
-		_apps := NewFilteredApps(New("http://127.0.0.1:8080"))
+		_apps := NewFilteredApps(marathon.New("http://127.0.0.1:8080"))
 
 		// FilteredApps is not nil
 		assert.NotNil(t, _apps)
@@ -34,13 +37,13 @@ func Test_NewFilteredApps(t *testing.T) {
 func TestFilteredApps_Get(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty FilteredApps ref if filter is empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty filter
 		_refapps := _apps.Get("")
@@ -58,7 +61,7 @@ func TestFilteredApps_Get(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_refapps := _apps.Get(filter)
@@ -77,13 +80,13 @@ func TestFilteredApps_Get(t *testing.T) {
 func TestFilteredApps_Scale(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Scale is called with app empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Scale(2, true)
@@ -99,7 +102,7 @@ func TestFilteredApps_Scale(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).Scale(2, true)
@@ -115,13 +118,13 @@ func TestFilteredApps_Scale(t *testing.T) {
 func TestFilteredApps_Stop(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Stop is called with app empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Stop(true)
@@ -137,7 +140,7 @@ func TestFilteredApps_Stop(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).Stop(true)
@@ -150,13 +153,13 @@ func TestFilteredApps_Stop(t *testing.T) {
 func TestFilteredApps_Start(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Start is called with app empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Start(2, true)
@@ -172,7 +175,7 @@ func TestFilteredApps_Start(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).Start(2, true)
@@ -189,13 +192,13 @@ func TestFilteredApps_Start(t *testing.T) {
 func TestFilteredApps_Restart(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Restart is called with app empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Restart(true)
@@ -211,7 +214,7 @@ func TestFilteredApps_Restart(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).Restart(true)
@@ -224,13 +227,13 @@ func TestFilteredApps_Restart(t *testing.T) {
 func TestFilteredApps_Suspend(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get error when Suspend is called with app empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Suspend(true)
@@ -246,7 +249,7 @@ func TestFilteredApps_Suspend(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).Suspend(true)
@@ -263,7 +266,7 @@ func TestFilteredApps_Suspend(t *testing.T) {
 func TestFilteredApps_Load(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Load is called with invalid file", func(t *testing.T) {
@@ -272,7 +275,7 @@ func TestFilteredApps_Load(t *testing.T) {
 		fileName := "dumpfile.txt"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_apps = _apps.Load(fileName, "")
@@ -289,17 +292,17 @@ func TestFilteredApps_Load(t *testing.T) {
 		filter := "/infra"
 		fileName := "dumpfile.json"
 		appsFiltered := &apps{}
-		_ = json.Unmarshal([]byte(appsArray), appsFiltered)
+		_ = json.Unmarshal([]byte(mockserver.AppsArray), appsFiltered)
 
 		// We create out file to read as JSON
-		errFile := ioutil.WriteFile(fileName, []byte(appsArray), 0644)
+		errFile := ioutil.WriteFile(fileName, []byte(mockserver.AppsArray), 0644)
 		defer os.Remove(fileName)
 
 		// We get not error
 		assert.Nil(t, errFile)
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_ = _apps.Load(fileName, filter)
@@ -312,7 +315,7 @@ func TestFilteredApps_Load(t *testing.T) {
 func TestFilteredApps_Dump(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when Dump is called with empty filter", func(t *testing.T) {
@@ -321,7 +324,7 @@ func TestFilteredApps_Dump(t *testing.T) {
 		fileName := "dumpfile.json"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Dump(fileName)
@@ -338,13 +341,13 @@ func TestFilteredApps_Dump(t *testing.T) {
 		filter := "/infra"
 		fileName := "dumpfile.json"
 		appsFiltered := &apps{}
-		_ = json.Unmarshal([]byte(appsArray), appsFiltered)
+		_ = json.Unmarshal([]byte(mockserver.AppsArray), appsFiltered)
 
 		// We need create a []byte with appsFiltered.Apps because Dump writes that
 		appsRef, _ := json.MarshalIndent(appsFiltered.Apps, "", "  ")
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).Dump(fileName)
@@ -364,7 +367,7 @@ func TestFilteredApps_Dump(t *testing.T) {
 func TestFilteredApps_DumpSingly(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get nil when DumpSingly is called with empty filter", func(t *testing.T) {
@@ -373,7 +376,7 @@ func TestFilteredApps_DumpSingly(t *testing.T) {
 		baseName := "dumpfile.json"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.DumpSingly(baseName)
@@ -391,7 +394,7 @@ func TestFilteredApps_DumpSingly(t *testing.T) {
 		baseName := "dumpfile"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).DumpSingly(baseName)
@@ -407,13 +410,13 @@ func TestFilteredApps_DumpSingly(t *testing.T) {
 		filter := "/infra"
 		baseName := "dumpfile.json"
 		appsFiltered := &apps{}
-		_ = json.Unmarshal([]byte(appsArray), appsFiltered)
+		_ = json.Unmarshal([]byte(mockserver.AppsArray), appsFiltered)
 
 		// We need create a []byte with appsFiltered.Apps because Dump writes that
 		appsRef, _ := json.MarshalIndent(appsFiltered.Apps[0], "", "  ")
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _apps.Get(filter).DumpSingly(baseName)
@@ -435,16 +438,16 @@ func TestFilteredApps_DumpSingly(t *testing.T) {
 func TestFilteredApps_FilterBy(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty Apps when FilterBy is called with not match func", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// Define a func with always return false
-		filterFunc := func(app AppDefinition) bool {
+		filterFunc := func(app application.AppDefinition) bool {
 
 			return false
 		}
@@ -462,7 +465,7 @@ func TestFilteredApps_FilterBy(t *testing.T) {
 		filter := "/infra"
 
 		// Define a func with return true when math ENVIRONMENT["BROKERPORT"] == 9092
-		filterFunc := func(app AppDefinition) bool {
+		filterFunc := func(app application.AppDefinition) bool {
 
 			if app.Env["BROKERPORT"] == "9092" {
 				return true
@@ -471,7 +474,7 @@ func TestFilteredApps_FilterBy(t *testing.T) {
 		}
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_filtered := _apps.Get(filter).FilterBy(filterFunc)
@@ -485,13 +488,13 @@ func TestFilteredApps_FilterBy(t *testing.T) {
 func TestFilteredApps_AsMap(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty Map if filter is empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty filter
 		_map := _apps.Get("").AsMap()
@@ -506,7 +509,7 @@ func TestFilteredApps_AsMap(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_map := _apps.Get(filter).AsMap()
@@ -522,13 +525,13 @@ func TestFilteredApps_AsMap(t *testing.T) {
 func TestFilteredApps_AsRaw(t *testing.T) {
 
 	// We create a Mock Server
-	server := MockMarathonServer()
+	server := mockserver.MockServer()
 	defer server.Close()
 
 	t.Run("get empty Ref if filter is empty", func(t *testing.T) {
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty filter
 		_raw := _apps.Get("").AsRaw()
@@ -543,7 +546,7 @@ func TestFilteredApps_AsRaw(t *testing.T) {
 		filter := "/infra"
 
 		// Try to create FilteredApp
-		_apps := NewFilteredApps(New(server.URL))
+		_apps := NewFilteredApps(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_raw := _apps.Get(filter).AsRaw()
