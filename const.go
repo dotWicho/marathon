@@ -3,21 +3,21 @@ package marathon
 import "time"
 
 const (
-	// Default timeout for Deployments
-	defaultDeploymentTimeout = 10 * time.Second
-	// root of Marathon API Rest
-	marathonApiBase string = "/v2"
-	// Applications endpoint
-	marathonApiApps string = marathonApiBase + "/apps/"
-	// Groups endpoint
-	marathonApiGroups string = marathonApiBase + "/groups/"
-	// Deployments endpoint
-	marathonApiDeployments string = marathonApiBase + "/deployments/"
-	// Check connection endpoint resource
-	marathonApiPing string = "/ping"
-	// Server Info endpoint
-	marathonApiInfo string = marathonApiBase + "/info"
-	// RegEx used for docker images
+	// DeploymentTimeout Default timeout for Deployments
+	DeploymentTimeout = 10 * time.Second
+	// APIBase root of Marathon API Rest
+	APIBase string = "/v2"
+	// APIApps Applications endpoint
+	APIApps string = APIBase + "/apps/"
+	// APIGroups Groups endpoint
+	APIGroups string = APIBase + "/groups/"
+	// APIDeployments Deployments endpoint
+	APIDeployments string = APIBase + "/deployments/"
+	// APIPing Check connection endpoint resource
+	APIPing string = "/ping"
+	// APIInfo Server Info endpoint
+	APIInfo string = APIBase + "/info"
+	// DockerImageRegEx RegEx used for docker images
 	DockerImageRegEx = `^(([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)(?::(\d+))?)((?:([a-zA-Z0-9-\/]+)?))\/([a-zA-Z0-9-_]+):(.*)$`
 )
 

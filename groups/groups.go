@@ -1,8 +1,11 @@
-package marathon
+package groups
 
 import (
 	"errors"
 	"fmt"
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/application"
+	"github.com/dotWicho/marathon/deployments"
 	"github.com/dotWicho/requist"
 	"github.com/dotWicho/utilities"
 	"time"
@@ -10,8 +13,6 @@ import (
 
 // Marathon Groups interface
 type groups interface {
-	SetClient(client *requist.Requist)
-
 	Get(id string) (*Groups, error)
 	Create(group *Groups) error
 	Destroy() error
@@ -24,7 +25,7 @@ type groups interface {
 	Suspend(force bool) error
 }
 
-// Marathon Groups implementation
+// Groups is a Marathon Groups implementation
 type Groups struct {
 	client *requist.Requist
 
@@ -32,25 +33,25 @@ type Groups struct {
 	group *Group
 
 	//
-	baseUrl string
+	baseURL string
 	auth    string
 
 	//
-	deploy *Response
-	fail   *FailureMessage
+	deploy *deployments.Response
+	fail   *marathon.FailureMessage
 }
 
 // Group encapsulates the data definitions of a Marathon Group
 type Group struct {
-	ID           string        `json:"id"`
-	Apps         []App         `json:"apps"`
-	Groups       []Group       `json:"groups"`
-	Pods         []interface{} `json:"pods"`
-	Dependencies []string      `json:"dependencies,omitempty"`
-	Version      time.Time     `json:"version,omitempty"`
-	VersionInfo  VersionInfo   `json:"versionInfo,omitempty"`
-	Executor     string        `json:"executor,omitempty"`
-	EnforceRole  bool          `json:"enforceRole,omitempty"`
+	ID           string                  `json:"id"`
+	Apps         []application.App       `json:"apps"`
+	Groups       []Group                 `json:"groups"`
+	Pods         []interface{}           `json:"pods"`
+	Dependencies []string                `json:"dependencies,omitempty"`
+	Version      time.Time               `json:"version,omitempty"`
+	VersionInfo  application.VersionInfo `json:"versionInfo,omitempty"`
+	Executor     string                  `json:"executor,omitempty"`
+	EnforceRole  bool                    `json:"enforceRole,omitempty"`
 }
 
 //=== Marathon Application methods
@@ -59,29 +60,29 @@ func NewMarathonGroups() *Groups {
 	mg := &Groups{
 		client:  nil,
 		group:   &Group{},
-		baseUrl: "",
+		baseURL: "",
 		auth:    "",
-		deploy:  &Response{},
-		fail:    &FailureMessage{},
+		deploy:  &deployments.Response{},
+		fail:    &marathon.FailureMessage{},
 	}
 	return mg
 }
 
 // SetClient allows reuse of the main object client
-func (mg *Groups) SetClient(client *requist.Requist) {
+func (mg *Groups) SetClient(client *requist.Requist) error {
 
-	if client != nil {
-		mg.client = client
-	} else {
-		panic(errors.New("client reference cannot be null"))
+	if client == nil {
+		return errors.New("client reference cannot be null")
 	}
+	mg.client = client
+	return nil
 }
 
 // Get allows to establish the internal structures to referenced id
 func (mg *Groups) Get(id string) (*Groups, error) {
 
 	if len(id) > 0 {
-		path := fmt.Sprintf("%s%s", marathonApiGroups, utilities.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathon.APIGroups, utilities.DelInitialSlash(id))
 
 		if _, err := mg.client.BodyAsJSON(nil).Get(path, mg.group, mg.fail); err != nil {
 			return nil, errors.New(fmt.Sprintf("unable to get add id = %s", id))
@@ -94,7 +95,7 @@ func (mg *Groups) Get(id string) (*Groups, error) {
 // Create allows create a Marathon group into server
 func (mg *Groups) Create(group *Group) error {
 
-	if _, err := mg.client.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
+	if _, err := mg.client.BodyAsJSON(group).Post(marathon.APIGroups, mg.deploy, mg.fail); err != nil {
 		return err
 	}
 	mg.group = group
@@ -106,7 +107,7 @@ func (mg *Groups) Destroy() error {
 
 	if mg.group != nil {
 
-		path := fmt.Sprintf("%s%s", marathonApiGroups, utilities.DelInitialSlash(mg.group.ID))
+		path := fmt.Sprintf("%s%s", marathon.APIGroups, utilities.DelInitialSlash(mg.group.ID))
 
 		if _, err := mg.client.BodyAsJSON(nil).Delete(path, mg.deploy, mg.fail); err != nil {
 			return err
@@ -119,7 +120,7 @@ func (mg *Groups) Destroy() error {
 // Update allows change values into Marathon group
 func (mg *Groups) Update(group *Group) error {
 
-	if _, err := mg.client.BodyAsJSON(group).Post(marathonApiGroups, mg.deploy, mg.fail); err != nil {
+	if _, err := mg.client.BodyAsJSON(group).Post(marathon.APIGroups, mg.deploy, mg.fail); err != nil {
 		return err
 	}
 	return nil

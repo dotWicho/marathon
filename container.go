@@ -17,14 +17,14 @@ type Docker struct {
 	ForcePullImage bool               `json:"forcePullImage"`
 }
 
-// Docker Volume representation
+// Volume is a Docker Volume representation
 type Volume struct {
 	ContainerPath string `json:"containerPath"`
 	HostPath      string `json:"hostPath"`
 	Mode          string `json:"mode,omitempty"`
 }
 
-// Docker PortMapping representation
+// PortMapping is a Docker PortMapping representation
 type PortMapping struct {
 	ContainerPort int               `json:"containerPort,omitempty"`
 	HostPort      int               `json:"hostPort,omitempty"`
@@ -33,7 +33,7 @@ type PortMapping struct {
 	ServicePort   int               `json:"servicePort,omitempty"`
 }
 
-// Docker exec Parameters representation
+// DockerParameters Docker exec Parameters representation
 type DockerParameters struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`

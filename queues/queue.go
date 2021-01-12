@@ -1,6 +1,8 @@
-package marathon
+package queues
 
 import (
+	"github.com/dotWicho/marathon"
+	"github.com/dotWicho/marathon/application"
 	"time"
 )
 
@@ -11,31 +13,31 @@ type Queues struct {
 
 // QueueType holds definitions of Tasks queued up or waiting to be scheduled
 type QueueType struct {
-	App                    AppDefinition          `json:"app"`
-	Count                  int                    `json:"count"`
-	Delay                  Delay                  `json:"delay"`
-	Since                  interface{}            `json:"since"`
-	ProcessedOffersSummary ProcessedOffersSummary `json:"processedOffersSummary"`
-	LastUnusedOffers       []LastUnusedOffer      `json:"lastUnusedOffers,omitempty"`
+	App                    application.AppDefinition `json:"app"`
+	Count                  int                       `json:"count"`
+	Delay                  Delay                     `json:"delay"`
+	Since                  interface{}               `json:"since"`
+	ProcessedOffersSummary ProcessedOffersSummary    `json:"processedOffersSummary"`
+	LastUnusedOffers       []LastUnusedOffer         `json:"lastUnusedOffers,omitempty"`
 }
 
 // AppQueue holds definitions of Apps in Queue
 type AppQueue struct {
 	ID                    string          `json:"id"`
-	Instances             int             `json:"instances"`
-	Cpus                  int             `json:"cpus"`
-	Mem                   int             `json:"mem"`
-	Disk                  int             `json:"disk"`
-	Constraints           [][]string      `json:"constraints"`
-	Ports                 []int           `json:"ports"`
-	RequirePorts          bool            `json:"requirePorts"`
-	BackoffSeconds        int             `json:"backoffSeconds"`
-	BackoffFactor         float64         `json:"backoffFactor"`
-	MaxLaunchDelaySeconds int             `json:"maxLaunchDelaySeconds"`
-	Container             Queue           `json:"container"`
-	UpgradeStrategy       UpgradeStrategy `json:"upgradeStrategy"`
-	Version               time.Time       `json:"version"`
-	VersionInfo           VersionInfo     `json:"versionInfo"`
+	Instances             int                         `json:"instances"`
+	Cpus                  int                         `json:"cpus"`
+	Mem                   int                         `json:"mem"`
+	Disk                  int                         `json:"disk"`
+	Constraints           [][]string                  `json:"constraints"`
+	Ports                 []int                       `json:"ports"`
+	RequirePorts          bool                        `json:"requirePorts"`
+	BackoffSeconds        int                         `json:"backoffSeconds"`
+	BackoffFactor         float64                     `json:"backoffFactor"`
+	MaxLaunchDelaySeconds int                         `json:"maxLaunchDelaySeconds"`
+	Container             marathon.Queue              `json:"container"`
+	UpgradeStrategy       application.UpgradeStrategy `json:"upgradeStrategy"`
+	Version               time.Time                   `json:"version"`
+	VersionInfo           application.VersionInfo     `json:"versionInfo"`
 }
 
 // Delay Queue representation

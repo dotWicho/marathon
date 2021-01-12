@@ -1,8 +1,9 @@
-package marathon
+package deployments
 
 import (
 	"errors"
 	"fmt"
+	"github.com/dotWicho/marathon"
 	"github.com/dotWicho/requist"
 	"github.com/dotWicho/utilities"
 	"time"
@@ -12,31 +13,22 @@ import (
 
 // Marathon Deployments interface
 type deployments interface {
-	SetClient(client *requist.Requist)
-	Get() (*Deployments, error)
+	Get() map[string]Deployment
+	Exist(id string) bool
 	Rollback(id string) error
 	Await(id string, timeout time.Duration) error
 }
 
-// Marathon Deployments implementation
+// Deployments is a Marathon Deployments implementation
 type Deployments struct {
 	client *requist.Requist
-	//
-	deployments *deployment
 
 	//
-	baseUrl string
-	auth    string
-
-	//
-	deploy *Response
-	fail   *FailureMessage
+	deploy Deployment
+	fail   *marathon.FailureMessage
 }
 
 //=== Marathon Deployments JSON Entities definition
-
-// Array of Deployment
-type deployment []Deployment
 
 // Deployment holds Marathons deploys on course
 type Deployment struct {
@@ -72,48 +64,81 @@ type LastResponse struct {
 	Status      int    `json:"status"`
 }
 
-// That, a Step representation
+// Step just that, a Step representation
 type Step struct {
 	Actions []Action `json:"actions"`
 }
 
-// That, a action representation
+// Action just that, an action representation
 type Action struct {
 	Action string `json:"action"`
 	App    string `json:"app"`
 }
 
-// Marathon API response when launch changes via deployments
+// Response is Marathon API response when launch changes via deployments
 type Response struct {
 	ID      string    `json:"deploymentId"`
 	Version time.Time `json:"version"`
 }
 
-// SetClient allows reuse of the main object client
-func (md *Deployments) SetClient(client *requist.Requist) {
+// New returns a new instance of Marathon deployment
+func New() *Deployments {
 
-	if client != nil {
-		md.client = client
-	} else {
-		panic(errors.New("client reference cannot be null"))
+	return &Deployments{
+		client:  nil,
+		deploy:  Deployment{},
+		fail:    &marathon.FailureMessage{},
 	}
 }
 
-// Get allows to establish the internal structures
-func (md *Deployments) Get() (*Deployments, error) {
+// SetClient allows reuse of the main object client
+func (md *Deployments) SetClient(client *requist.Requist) error {
 
-	if _, err := md.client.BodyAsJSON(nil).Get(marathonApiDeployments, md.deployments, md.fail); err != nil {
-		return nil, errors.New("unable to get deployments")
+	if client == nil {
+		return errors.New("client reference cannot be null")
 	}
-	return md, nil
+	md.client = client
+	return nil
+}
+
+// Get allows to establish the internal structures
+func (md *Deployments) Get() map[string]Deployment {
+
+	mapDeploy := make(map[string]Deployment)
+	var deploys []Deployment
+	if _, err := md.client.BodyAsJSON(nil).Get(marathon.APIDeployments, &deploys, md.fail); err != nil {
+		return nil
+	}
+
+	if len(deploys) > 0 && len(md.fail.Message) == 0 {
+		for _, deploy := range deploys {
+			mapDeploy[deploy.ID] = Deployment{
+				ID:             deploy.ID,
+				Version:        deploy.Version,
+				AffectedApps:   deploy.AffectedApps,
+				AffectedPods:   deploy.AffectedPods,
+				Steps:          deploy.Steps,
+				CurrentActions: deploy.CurrentActions,
+				CurrentStep:    deploy.CurrentStep,
+				TotalSteps:     deploy.TotalSteps,
+			}
+		}
+	}
+	return mapDeploy
+}
+
+// Get allows to establish the internal structures
+func (md *Deployments) Exist(id string) bool {
+
+	return len(md.Get()[id].ID) > 0
 }
 
 // Rollback cancel a Marathon deployment
 func (md *Deployments) Rollback(id string) error {
 
-	if md.deployments != nil {
+	if len(id) > 0 && md.Exist(id) {
 
-		path := fmt.Sprintf("%s%s", marathonApiDeployments, utilities.DelInitialSlash(id))
+		path := fmt.Sprintf("%s%s", marathon.APIDeployments, utilities.DelInitialSlash(id))
 
 		if _, err := md.client.BodyAsJSON(nil).Delete(path, md.deploy, md.fail); err != nil {
 			return err
@@ -124,7 +149,28 @@ func (md *Deployments) Rollback(id string) error {
 }
 
 // Await wait a Marathon deployment finish or timeout
-func (md *Deployments) Await(id string, timeout time.Duration) error {
+func (md *Deployments) Await(id string, timeout time.Duration) (err error) {
 
-	return nil
+	stop := make(chan bool)
+
+	go func(end time.Time) {
+		for {
+			fmt.Println(".")
+			if !md.Exist(id) {
+				err = nil
+				stop <- true
+			}
+			if time.Now().After(end) {
+				err = errors.New("deploy still executing. Timeout reached")
+				stop <- true
+			}
+			select {
+			case <-time.After(1 * time.Second):
+			case <-stop:
+				return
+			}
+		}
+	}(time.Now().Add(timeout))
+
+	return
 }
