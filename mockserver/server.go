@@ -594,6 +594,20 @@ var AppRedis = `{
   }
 }`
 
+var AppRedisVersions = `{
+	"versions":[
+		"2020-11-19T18:33:29.564Z",
+		"2020-11-04T17:56:43.905Z",
+		"2020-12-01T18:27:36.916Z",
+		"2020-11-04T14:35:11.968Z",
+		"2020-10-22T20:25:26.336Z",
+		"2020-10-31T22:49:59.280Z",
+		"2021-01-16T18:27:41.662Z",
+		"2021-01-21T20:27:42.725Z",
+		"2021-01-03T19:00:57.814Z"
+	]
+}`
+
 var appBroker = `{
  "app": {
    "id": "/infra/broker-0",
@@ -900,6 +914,26 @@ func MockServer() *httptest.Server {
 				w.WriteHeader(http.StatusOK)
 				w.Header().Add("Content-Type", "application/json")
 				_, _ = w.Write(buffer)
+			}
+
+		case "/v2/apps/infra/redis-1/versions":
+
+			switch r.Method {
+
+			case http.MethodGet:
+				w.WriteHeader(http.StatusOK)
+				w.Header().Add("Content-Type", "application/json")
+				_, _ = w.Write([]byte(AppRedisVersions))
+			}
+
+		case "/v2/apps/infra/redis-1/versions/2021-01-21T20:27:42.725Z":
+
+			switch r.Method {
+
+			case http.MethodGet:
+				w.WriteHeader(http.StatusOK)
+				w.Header().Add("Content-Type", "application/json")
+				_, _ = w.Write([]byte(AppRedis))
 			}
 
 		case "/v2/apps/infra/broker-0/restart":

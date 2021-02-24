@@ -1163,6 +1163,60 @@ func TestApplication_DelParameter(t *testing.T) {
 	})
 }
 
+func TestApplication_Versions(t *testing.T) {
+
+	// We create a Mock Server
+	server := mockserver.MockServer()
+	defer server.Close()
+
+	// We define some vars
+	appID := "/infra/redis-1"
+
+	t.Run("get nil when Versions is called with invalid appId", func(t *testing.T) {
+
+		// Try to create Application
+		_app := New(marathon.New(server.URL))
+
+		// try to launch Versions with empty app id
+		_versions := _app.Versions()
+
+		// Apps data reference must be empty
+		assert.Empty(t, _versions)
+	})
+
+	t.Run("get valid []versions is called with valid appId", func(t *testing.T) {
+
+		// Try to create Application
+		_app := New(marathon.New(server.URL))
+
+		// try to launch Versions with empty app id
+		_versions := _app.Get(appID).Versions()
+
+		// Apps data reference must be empty
+		assert.NotNil(t, _versions)
+	})
+
+	t.Run("get valid version is called with valid appId", func(t *testing.T) {
+
+		// Try to create Application
+		_app := New(marathon.New(server.URL))
+
+		// try to launch LastVersion with a valid app id
+		_version := _app.Get(appID).LastVersion()
+
+		// Must be a valid version
+		assert.NotEmpty(t, _version)
+		assert.Equal(t, "2021-01-21T20:27:42.725Z", _version)
+
+		// Fire up get Config by Date Version
+		_backup := _app.Get(appID).Config(_version)
+
+		// Must be a vali Application Ref and ID not empty
+		assert.NotNil(t, _backup)
+		assert.NotEmpty(t, _backup.app.App.ID)
+	})
+}
+
 func TestApplication_Load(t *testing.T) {
 
 	// We create a Mock Server

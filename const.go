@@ -17,6 +17,10 @@ const (
 	APIPing string = "/ping"
 	// APIInfo Server Info endpoint
 	APIInfo string = APIBase + "/info"
+	// APIVersions Apps Configs versions endpoint
+	APIVersions string = APIApps + "%s/versions"
+	// APIConfigByVersion Apps Definition by version endpoint
+	APIConfigByVersion = APIVersions + "/%s"
 	// DockerImageRegEx RegEx used for docker images
 	DockerImageRegEx = `^(([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)(?::(\d+))?)((?:([a-zA-Z0-9-\/]+)?))\/([a-zA-Z0-9-_]+):(.*)$`
 )

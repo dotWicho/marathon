@@ -8,6 +8,7 @@ import (
 	"github.com/dotWicho/utilities"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -59,6 +60,10 @@ type application interface {
 	Parameters() (map[string]string, error)
 	AddParameter(key, value string, force bool) error
 	DelParameter(key string, force bool) error
+
+	Versions() []string
+	LastVersion() string
+	Config(version string) *Application
 
 	Load(fileName string) *Application
 	Dump(fileName string) error
@@ -144,7 +149,7 @@ type UnreachableStrategy struct {
 
 // AppVersions reflects the data used by the sub-element appVersions on a Marathon App
 type AppVersions struct {
-	Versions []time.Time `json:"versions"`
+	Versions []string `json:"versions"`
 }
 
 // NewApplication returns a new instance of Marathon application implementation
@@ -152,10 +157,10 @@ func New(client *marathon.Client) *Application {
 
 	if client != nil {
 		return &Application{
-			client:  client,
-			app:     &App{},
-			deploy:  &data.Response{},
-			fail:    &data.FailureMessage{},
+			client: client,
+			app:    &App{},
+			deploy: &data.Response{},
+			fail:   &data.FailureMessage{},
 		}
 	}
 	return nil
@@ -527,6 +532,56 @@ func (ma *Application) DelParameter(key string, force bool) error {
 		return fmt.Errorf("parameters %s dont exist in Marathon app %s", key, ma.app.App.ID)
 	}
 	return errors.New("app cannot be null nor empty")
+}
+
+// Versions returns all configurations versions of provided task
+func (ma *Application) Versions() []string {
+
+	if len(ma.app.App.ID) > 0 {
+		marathon.Logger.Debug("Application: Versions %+v", ma.app.App)
+
+		path := fmt.Sprintf(marathon.APIVersions, utilities.DelInitialSlash(ma.app.App.ID))
+
+		versions := &AppVersions{Versions: make([]string, 0)}
+
+		if _, err := ma.client.Session.BodyAsJSON(nil).Get(path, versions, ma.fail); err != nil {
+			marathon.Logger.Debug("Application: Versions failed [%+v]", err)
+			ma.clear()
+		}
+
+		if len(versions.Versions) > 0 {
+			return versions.Versions
+		}
+	}
+	return nil
+}
+
+// LastVersion returns last version of a provided task
+func (ma *Application) LastVersion() string {
+
+	if len(ma.app.App.ID) > 0 {
+		if versions := ma.Versions(); len(versions) > 0 {
+			sort.Strings(versions)
+			return versions[len(versions)-1]
+		}
+	}
+	return ""
+}
+
+// Config returns a AppDefinition based on it version
+func (ma *Application) Config(version string) *Application {
+
+	if len(ma.app.App.ID) > 0 {
+		marathon.Logger.Debug("Application: Config %+v", ma.app.App)
+
+		path := fmt.Sprintf(marathon.APIConfigByVersion, utilities.DelInitialSlash(ma.app.App.ID), version)
+
+		if _, err := ma.client.Session.BodyAsJSON(nil).Get(path, ma.app, ma.fail); err != nil {
+			marathon.Logger.Debug("Application: Config failed [%+v]", err)
+			ma.clear()
+		}
+	}
+	return ma
 }
 
 // Load allows create or update a Marathon application from file
