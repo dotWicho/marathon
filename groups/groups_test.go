@@ -16,7 +16,7 @@ func Test_NewGroups(t *testing.T) {
 	t.Run("nil Groups if send nil client", func(t *testing.T) {
 
 		// Try to create Groups
-		_groups := NewGroups(nil)
+		_groups := New(nil)
 
 		// Groups must be nil
 		assert.Nil(t, _groups)
@@ -25,7 +25,7 @@ func Test_NewGroups(t *testing.T) {
 	t.Run("valid Groups if send valid client", func(t *testing.T) {
 
 		// Try to create Groups
-		_groups := NewGroups(marathon.New("http://127.0.0.1:8080"))
+		_groups := New(marathon.New("http://127.0.0.1:8080"))
 
 		// Groups must be not nil
 		assert.NotNil(t, _groups)
@@ -41,7 +41,7 @@ func TestGroups_Get(t *testing.T) {
 	t.Run("get empty Group ref if id is empty", func(t *testing.T) {
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_groupRef := _group.Get("")
@@ -59,7 +59,7 @@ func TestGroups_Get(t *testing.T) {
 		groupID := "/infra"
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_groupRef := _group.Get(groupID)
@@ -82,7 +82,7 @@ func TestGroups_Create(t *testing.T) {
 		emptyGroup := &Group{}
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Create(emptyGroup)
@@ -102,7 +102,7 @@ func TestGroups_Create(t *testing.T) {
 		_ = json.Unmarshal([]byte(mockserver.GroupsArray), validGroup)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Create(validGroup)
@@ -127,7 +127,7 @@ func TestGroups_Destroy(t *testing.T) {
 	t.Run("get empty Group ref if app is empty", func(t *testing.T) {
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Destroy()
@@ -146,7 +146,7 @@ func TestGroups_Destroy(t *testing.T) {
 		groupID := "/infra"
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Get(groupID).Destroy()
@@ -171,7 +171,7 @@ func TestGroups_Update(t *testing.T) {
 		emptyGroup := &Group{}
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Update(emptyGroup)
@@ -191,7 +191,7 @@ func TestGroups_Update(t *testing.T) {
 		_ = json.Unmarshal([]byte(mockserver.GroupsArray), validGroup)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Update(validGroup)
@@ -216,7 +216,7 @@ func TestGroups_Scale(t *testing.T) {
 	t.Run("get empty Group ref if app is empty", func(t *testing.T) {
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Scale(2, true)
@@ -236,7 +236,7 @@ func TestGroups_Scale(t *testing.T) {
 		_ = json.Unmarshal([]byte(mockserver.GroupsArray), validGroup)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Get(validGroup.ID).Scale(2, true)
@@ -261,7 +261,7 @@ func TestGroups_Stop(t *testing.T) {
 	t.Run("get empty Group ref if app is empty", func(t *testing.T) {
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Stop(true)
@@ -281,7 +281,7 @@ func TestGroups_Stop(t *testing.T) {
 		_ = json.Unmarshal([]byte(mockserver.GroupsArray), validGroup)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Get(validGroup.ID).Stop(true)
@@ -306,7 +306,7 @@ func TestGroups_Start(t *testing.T) {
 	t.Run("get empty Group ref if app is empty", func(t *testing.T) {
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Start(2, true)
@@ -326,7 +326,7 @@ func TestGroups_Start(t *testing.T) {
 		_ = json.Unmarshal([]byte(mockserver.GroupsArray), validGroup)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Get(validGroup.ID).Start(2, true)
@@ -351,7 +351,7 @@ func TestGroups_Restart(t *testing.T) {
 	t.Run("get empty Group ref if app is empty", func(t *testing.T) {
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Restart(true)
@@ -371,7 +371,7 @@ func TestGroups_Restart(t *testing.T) {
 		_ = json.Unmarshal([]byte(mockserver.GroupsArray), validGroup)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Get(validGroup.ID).Restart(true)
@@ -396,7 +396,7 @@ func TestGroups_Suspend(t *testing.T) {
 	t.Run("get empty Group ref if app is empty", func(t *testing.T) {
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Suspend(true)
@@ -416,7 +416,7 @@ func TestGroups_Suspend(t *testing.T) {
 		_ = json.Unmarshal([]byte(mockserver.GroupsArray), validGroup)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Get(validGroup.ID).Suspend(true)
@@ -444,7 +444,7 @@ func TestGroups_Apply(t *testing.T) {
 		fileName := "dumpfile.conf"
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Load(fileName).Apply(true)
@@ -469,7 +469,7 @@ func TestGroups_Apply(t *testing.T) {
 		assert.Nil(t, errFile)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Load(fileName).Apply(true)
@@ -496,7 +496,7 @@ func TestGroups_Load(t *testing.T) {
 		fileName := "dumpfile.conf"
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_ = _group.Load(fileName)
@@ -520,7 +520,7 @@ func TestGroups_Load(t *testing.T) {
 		assert.Nil(t, errFile)
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		_ = _group.Load(fileName)
@@ -542,7 +542,7 @@ func TestGroups_Dump(t *testing.T) {
 		fileName := "dumpfile.conf"
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Dump(fileName)
@@ -559,7 +559,7 @@ func TestGroups_Dump(t *testing.T) {
 		fileName := "dumpfile.json"
 
 		// Try to create Groups
-		_group := NewGroups(marathon.New(server.URL))
+		_group := New(marathon.New(server.URL))
 
 		// try to Get with empty app id
 		err := _group.Get("/infra").Dump(fileName)

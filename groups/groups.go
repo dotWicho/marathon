@@ -28,6 +28,8 @@ type groups interface {
 	Load(fileName string) *Groups
 	Dump(fileName string) (err error)
 
+	AsRaw() *Group
+
 	traverseGroupsWithAppID(group *Group, callbackFunc CallBackFuncsWithAppID) (err error)
 	traverseGroupsWithAppDefinition(group *Group, callbackFunc CallBackFuncsWithAppDef) (err error)
 }
@@ -65,8 +67,8 @@ type CallBackFuncsWithAppDef func(app application.AppDefinition) error
 
 //=== Marathon Application methods
 
-// NewGroups returns a new instance of Marathon groups implementation
-func NewGroups(client *marathon.Client) *Groups {
+// New returns a new instance of Marathon groups implementation
+func New(client *marathon.Client) *Groups {
 
 	if client != nil {
 		return &Groups{
@@ -283,6 +285,12 @@ func (mg *Groups) Dump(fileName string) (err error) {
 		return err
 	}
 	return errors.New("group cannot be null nor empty")
+}
+
+// AsRaw
+func (mg *Groups) AsRaw() *Group {
+
+	return mg.group
 }
 
 // traverseGroupsWithAppID cross the group structure executing a CallBackFuncsWithAppID
